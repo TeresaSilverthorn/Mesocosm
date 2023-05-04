@@ -1,4 +1,4 @@
-## Mesocosm experiment ##
+## Script for calculating Co2 and CH4 fluxes from LGR for mesocosm experiment ##
 
 # Effects of temperature and organic matter quantity on decomposition and C gas fluxes #
 
