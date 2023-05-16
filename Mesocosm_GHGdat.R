@@ -290,7 +290,7 @@ str(CH4_dat) #40011 obs. of  18 variables
 # mg/L = ((ppm  * molecular mass *1 atm )/1000) / (0.082 * 293K )
 # ug/L = (ppm  * molecular mass *1 atm ) / (0.082 * 293K )
 
-#Note here that we need to use the specific pressures and temperatures
+#Note here that we assume 1 atm for the pressure and 20C for the temperature
 
 CO2_dat$CO2_mg_L <- ((CO2_dat$CO2_ppm  * 12.011 * 1 )/1000) / (0.08206 *(20 + 273.15))
 
