@@ -290,11 +290,11 @@ str(CH4_dat) #40011 obs. of  18 variables
 # mg/L = ((ppm  * molecular mass *1 atm )/1000) / (0.082 * 293K )
 # ug/L = (ppm  * molecular mass *1 atm ) / (0.082 * 293K )
 
-#Note here that we assume 1 atm for the pressure and 20C for the temperature
+#Note here that we assume an atmospheric pressure of 1 atm and use the average air temperature of 25C
 
-CO2_dat$CO2_mg_L <- ((CO2_dat$CO2_ppm  * 12.011 * 1 )/1000) / (0.08206 *(20 + 273.15))
+CO2_dat$CO2_mg_L <- ((CO2_dat$CO2_ppm  * 12.011 * 1 )/1000) / (0.08206 *(25 + 273.15))
 
-CH4_dat$CH4_ug_L <- (CH4_dat$CH4_ppm  * 12.011 *1 ) / (0.082*(20 + 273.15))
+CH4_dat$CH4_mg_L <- ((CH4_dat$CH4_ppm  * 12.011 *1 )/1000) / (0.082*(25 + 273.15))
 
 
 
@@ -311,7 +311,7 @@ mean(CO2_dat$area_m2) # 0.007854... m2
 mean(CH4_dat$volume_L) # 0.8400581... L
 mean(CH4_dat$area_m2) # 0.007854... m2
 median(CO2_dat$CO2_mg_L) # ~0.27 mg/L          
-median(CH4_dat$CH4_ug_L) # ~1.0 ug/L      
+median(CH4_dat$CH4_mg_L) # 0.001 mg/L      
 mean(CO2_dat$flux_time) # 0.076 h = 4.56 minutes
 mean(CH4_dat$flux_time) # 0.076 h = 4.56 minutes
 
@@ -336,10 +336,11 @@ missing_values <- setdiff( ancil_dat$ID_unique, CO2.results$ID_unique) #Normal t
 
 CH4.results<- gasfluxes(CH4_dat, .id = "ID_unique", 
                         .V = "volume_L", .A = "area_m2", 
-                        .times = "flux_time",.C = "CH4_ug_L", 
+                        .times = "flux_time",.C = "CH4_mg_L", 
                         methods = c("linear"), plot=F)
 
 str(CH4.results) #252 obs. of  10 variables
+
 
 #Subset the useful columns 
 CO2.results<- subset(CO2.results, select = c( "ID_unique", "linear.f0"))
@@ -348,7 +349,7 @@ names(CO2.results)[names(CO2.results) == "linear.f0"] <- "CO2_C_mg_m2_h" #rename
 write.csv (CO2.results, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/mesocosm_CO2_flux.results.csv")
 
 CH4.results<- subset(CH4.results, select = c( "ID_unique", "linear.f0"))
-names(CH4.results)[names(CH4.results) == "linear.f0"] <- "CH4_C_ug_m2_h" #rename
+names(CH4.results)[names(CH4.results) == "linear.f0"] <- "CH4_C_mg_m2_h" #rename
 
 write.csv (CH4.results, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/mesocosm_CH4_flux.results.csv")
 
