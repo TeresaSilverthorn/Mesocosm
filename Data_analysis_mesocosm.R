@@ -17,6 +17,8 @@ library(lmerTest)
 library(ggallin) #for pseudolog10 transformation dealing with negative numbers
 library(cowplot) #inset plots
 library(MuMIn)
+library(MASS)
+library(car)
 
 #### Set wd for figures ####
 setwd("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Figures")
@@ -27,7 +29,7 @@ setwd("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm ex
 
 dat <- read.csv ("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/CO2.CH4.fluxes.csv")
 
-str(dat) #252 obs of 27 vars #since we measured DO on one day that we did not measure GHGs, that measure is missing here
+str(dat) #252 obs of 28 vars #since we measured DO on one day that we did not measure GHGs, that measure is missing here
 
 #Make necessary factors
 dat$leaf_treatment <- as.factor(dat$leaf_treatment) #make leaf treatment a factor
@@ -72,98 +74,6 @@ str(leaf_mass_loss) #36 obs. of  3 variables
 #merge
 dat <- merge(dat, leaf_mass_loss, by="Column_ID")
 
-#plot as boxplot
-palette2 <- c("#cba736", "#ba5027", "#741016")
-
-tiff("AFDM_remain", units="in", width=6, height=4, res=300)
-
-AFDM_remain <-  ggplot(subset(dat, leaf_treatment!= "control" & t=="dry"), aes(x=leaf_treatment, y=percent_AFDM_remaining, fill=temp_C)) + 
-  geom_boxplot(outlier.colour="black", outlier.shape=8,
-               outlier.size=4) + scale_fill_manual(values = palette2) +
-  ylab("AFDM remaining (%)") +
-  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line(), axis.title.x = element_blank())
-AFDM_remain 
-
-dev.off()
-
-
-#plot as dots
-palette2 <- c("#e2b74b", "#B7692A", "#A01313")
-
-tiff("AFDM_remain_points", units="in", width=6, height=4, res=300)
-
-AFDM_remain <-  ggplot(subset(dat, leaf_treatment!= "control" & t=="dry"), aes(x=leaf_treatment, y=percent_AFDM_remaining, colour=temp_C, group=interaction(leaf_treatment, temp_C))) + 
- geom_jitter(position = position_dodge(0.8), shape = 16, size = 3, alpha=0.6, stroke = 0.5)+ scale_colour_manual(values = palette2) +
-  stat_summary(
-    fun.data = function(x) {
-      ymin <- min(x)
-      ymax <- max(x)
-      return(data.frame(ymin = ymin, ymax = ymax))
-    },
-    geom = "linerange", end_cap=F,width = 0.2,position = position_dodge(0.8)) +
-  scale_colour_manual(values = palette2) +
-  ylab("AFDM remaining (%)") +
-  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line(), axis.title.x = element_blank())
-AFDM_remain 
-
-dev.off()
-
-#### Plots AFDM vs CO2 and CH4 at the last day #### Can also try against the sum of emissions?
-tiff("CO2_AFDM", units="in", width=5, height=5, res=300)
-
-CO2_AFDM <- ggplot(subset(dat, leaf_treatment!= "control" & t=="t16"), aes(percent_AFDM_remaining, CO2_C_mg_m2_h)) + geom_point(aes(colour=temp_C, shape=leaf_treatment), size=3.5, alpha=0.6) +  theme_bw() +  theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank(), axis.ticks.x=element_blank(),  legend.position=c(.9,.75), axis.line = element_line(colour = "black"), text = element_text(size = 20), axis.text = element_text(size = 20, colour="black"))   + scale_colour_manual(values = palette2) +  geom_smooth(aes(colour=temp_C), method = "lm", linetype="dashed", se=FALSE,  formula = y ~ x) 
-CO2_AFDM
-
-dev.off()
-
-tiff("CH4_AFDM", units="in", width=5, height=5, res=300)
-
-CH4_AFDM <- ggplot(subset(dat, leaf_treatment!= "control" & t=="t16"), aes(percent_AFDM_remaining, CH4_C_ug_m2_h)) + geom_point(aes(colour=temp_C, shape=leaf_treatment), size=3.5, alpha=0.6) +  theme_bw() +  theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank(), axis.ticks.x=element_blank(),  legend.position=c(.9,.75), axis.line = element_line(colour = "black"), text = element_text(size = 20), axis.text = element_text(size = 20, colour="black"))   + scale_colour_manual(values = palette2) +  geom_smooth(aes(colour=temp_C), method = "lm", linetype="dashed", se=FALSE,  formula = y ~ x) + coord_trans(y=pseudolog10_trans)
-CH4_AFDM
-
-dev.off()
-
-#Check correlation matrix
-sub_dat <- subset(dat, leaf_treatment!= "control" & t=="t16")
-head(sub_dat)
-
-result_CO2 <- sub_dat %>%
-  group_by(temp_C) %>%
-  summarise(correlation = cor(CO2_C_mg_m2_h, percent_AFDM_remaining),
-            p_value = cor.test(CO2_C_mg_m2_h, percent_AFDM_remaining)$p.value) %>%
-  ungroup()
-
-result_CH4 <- sub_dat %>%
-  group_by(temp_C) %>%
-  summarise(correlation = cor(CH4_C_mg_m2_h, percent_AFDM_remaining),
-            p_value = cor.test(CH4_C_mg_m2_h, percent_AFDM_remaining)$p.value) %>%
-  ungroup()
-
-
-
-#plot CO2 vs CH4, excluding 2 very high CH4 values
-
-tiff("CO2vCH4", units="in", width=5, height=5, res=300) 
-
-ghg <- ggplot(subset(dat, leaf_treatment!= "control" & t=="t16"), aes(CO2_C_mg_m2_h, CH4_C_mg_m2_h)) + geom_point(aes(colour=temp_C, shape=leaf_treatment), size=3.5, alpha=0.6) +  theme_bw() +  theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank(), axis.ticks.x=element_blank(),  legend.position=c(.9,.75), axis.line = element_line(colour = "black"), text = element_text(size = 20), axis.text = element_text(size = 20, colour="black"))   + scale_colour_manual(values = palette2) + ylim(-5, 12000) 
-ghg
-
-dev.off()
-
-
-sub <- subset(dat, t=="dry")
-sd(sub$CH4_C_mg_m2_h, na.rm=T)
-
-
-# Summary data
-summary <- dat %>%
-  dplyr::group_by(leaf_treatment) %>%
-  dplyr::summarise(
-    #mean_sediment_g = mean(sediment_g),
-   # sd_mean_sediment_g = sd(sediment_g), 
-    mean_dry_input_leaves_g = mean(dry_input_leaves_g), 
-    sd_dry_input_leaves_g = sd(dry_input_leaves_g))
-
 
 #### Import and merge sediment data ####
 OM <- fread ("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Data/Sediment Data/Sediment_OM_mesocosm.csv")
@@ -181,9 +91,8 @@ dat <- merge(dat, OM, by="Column_ID")
 #### Import the ibutton daily average data ####
 Tave <- read.csv("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Data/Daily_ave_ibutton_temps_mesocosm.csv")
 
-
 #merge with dat
-dat$Date <- as.Date(dat$Date)
+Tave$Date <-as.POSIXct(Tave$Date, format="%Y-%m-%d", tz = "Europe/Berlin")
 
 #Merge based on dat (left merge)
 
@@ -197,17 +106,152 @@ Tave_summary <- dat %>%
   dplyr::filter(t != "dry" & t != "t0") %>%
   dplyr::summarise(mean_Avg_Temp = mean(Avg_Temp), sd_Avg_Temp = sd(Avg_Temp))
 
+Water_temp_summary <- dat %>%
+  dplyr::group_by(temp_C) %>%
+  dplyr::filter(t != "dry" & t != "t0") %>%
+  dplyr::summarise(mean_Avg_Temp = mean(Water_temp_C), sd_Avg_Temp = sd(Water_temp_C)) 
+
+#can add Column ID in group by, to see the variability by column
+
+
+#when comparing the ibutton temperatures to the point measures I took, they do not always correspond... Check this!
+palette1 <- c("#e1e590", "#BCD980", "#5D966D", "#3D6160")
+
+
+temp1 <- ggplot(dat, aes(x=Avg_Temp, y=Water_temp_C)) + 
+  geom_point(aes(shape=temp_C,  colour=as.factor(Date)), size=2.5, alpha=0.7) + geom_abline() +
+ # scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + 
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + xlim(20,33) + ylim(20,33)
+temp1
+
+temp <- ggplot(subset(dat, Date!="2022-08-11"), aes(x=Water_temp_C, y=Avg_Temp,)) + 
+    geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7) + geom_abline() +
+  geom_smooth(method = "lm", se=FALSE, color="black", formula = y ~ x)  + stat_regline_equation(label.y = 30) + stat_cor(label.y = 29) +
+  geom_text(aes(label = Column_ID), size = 3, nudge_x = 0.2, nudge_y = 0.2) +
+  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + xlim(20,33) + ylim(20,33)
+temp #relationship y = 5.9+0.71x
+
+#Overall they have a good relationship, but there are a few that are off, eg/ some 30C that are reported too low by the ibutton, perhaps the ibuttom was out of the water and we need to correct this!
+#no point measures for 2022-07-26
+#2022-07-27 and 28 looks good
+#2022-07-29 perhaps one of the 25C ibuttons was out of the water
+#2022-07-30 perhaps one of the 25C ibuttons was out of the water
+#2022-08-03 perhaps one or two of the 30 was out of water
+#2022-08-11 maybe all of them were out of the water???? In my notes I have 26,31,33,32,28 temp regulator out of water
+
+#So I think it's better to use the manual temperatures than the ibuttons, especially for 2022-08-11, because by then there was so much evaporation (esp at high temps) that the temperature controller as well as the ibutton itself may have been out of the water
+
+tiff("manual_temp", units="in", width=7, height=6, res=300)
+
+manual_temp <- ggplot(subset(dat, Date !="2022-07-29"), aes(x=as.factor(Date), y=Water_temp_C)) + 
+  geom_point(aes(shape=temp_C), size=2, alpha=0.4) + 
+  geom_line(aes(group = Column_ID, color = as.factor(Column_ID)), size = 1) + 
+  theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3)
+manual_temp
+
+dev.off()
+
+tiff("ibutton_temp", units="in", width=7, height=6, res=300)
+
+ibutton_temp <- ggplot(subset(dat, Date !="2022-07-26"), aes(x=as.factor(Date), y=Avg_Temp)) + 
+  geom_point(aes(shape=temp_C), size=2, alpha=0.4) + 
+  geom_line(aes(group = Column_ID, color = as.factor(temp_C)), size = 1) + 
+  theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3) 
+ibutton_temp
+
+dev.off()
+
+#Try replacing the 2022-08-11 Avg_Temp data with the Water_temp_C data, and corrected by the equation of the relationship between the two measurement types
+
+dat <- dat %>%
+  mutate(Avg_Temp = case_when(
+    Date == "2022-08-11" ~ 5.9 + 0.71 * Water_temp_C,
+    TRUE ~ Avg_Temp
+  ))
+
+
+temp <- ggplot(subset(dat, Date !="2022-07-26"), aes(x=as.factor(Date), y=Avg_Temp)) + 
+  geom_point(aes(shape=temp_C), size=2, alpha=0.4) + 
+  geom_line(aes(group = Column_ID, color = as.factor(temp_C)), size = 1) + 
+  theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3) 
+temp
+
+
+
+tiff("temp_final", units="in", width=7, height=5, res=300)
+
+palette3 <- c( "#BCD980", "#5D966D", "#3D6160")
+
+ibutton_temp_final <- ggplot(subset(dat, Date !="2022-07-26"), aes(x=as.factor(Date), y=Avg_Temp)) + 
+  geom_point(aes(shape=temp_C, colour=temp_C), size=2, alpha=0.9) + 
+  scale_color_manual(values = palette3) +
+  geom_line(aes(group = Column_ID, color = as.factor(temp_C)), size = 0.8, alpha=0.5) + 
+  theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3) +  ylab("Water temperature (\u00B0C)") + xlab("Date")
+ibutton_temp_final
+
+dev.off()
+
+
+Tave_summary2 <- dat %>%
+  dplyr::group_by(temp_C) %>%
+  dplyr::filter(t != "dry" & t != "t0") %>%
+  dplyr::summarise(mean_Avg_Temp = mean(Avg_Temp), sd_Avg_Temp = sd(Avg_Temp))
+
+
 ###______________________
+#make a new category for control vs leaves
+
+dat <- dat %>%
+  mutate(leaf_presence= case_when(
+    startsWith(as.character(leaf_treatment), "control") ~ "sediment",
+    startsWith(as.character(leaf_treatment), "low") ~ "sediment + OM",
+    startsWith(as.character(leaf_treatment), "medium") ~ "sediment + OM",
+    startsWith(as.character(leaf_treatment), "high") ~ "sediment + OM"  ))
+
 
 # summary by date
 
 summary2 <- dat %>%
-  dplyr::group_by(t) %>%
+  dplyr::group_by(Date, leaf_presence) %>%
   dplyr::summarise(
        mean_CO2_C_mg_m2_h = mean(CO2_C_mg_m2_h), 
     sd_CO2_C_mg_m2_h = sd(CO2_C_mg_m2_h), 
     mean_CH4_C_mg_m2_h = mean(CH4_C_mg_m2_h),
     sd_CH4_C_mg_m2_h = sd(CH4_C_mg_m2_h))
+
+write.csv(summary2, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/date_flux_means.csv")
+
+leaf_presence_CO2 <- ggplot(dat, aes(as.factor(Date), CO2_C_mg_m2_h, fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + xlab("Date") + scale_fill_manual(values = c("#e1e590", "#5D966D"))
+leaf_presence_CO2
+
+
+leaf_presence_CH4 <- ggplot(dat, aes(as.factor(Date), log(CH4_C_mg_m2_h +0.003350449) , fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +   ylab(expression(log~CH[4]~flux~(mg~CH[4]*`-C`~m^-2~h^-1))) + xlab("Date") + scale_fill_manual(values = c("#e1e590", "#5D966D")) 
+leaf_presence_CH4 #this excludes 1 outlier
+
+#Combine 
+
+tiff("leaf_presence_CO2CH4", units="in", width=6, height=7, res=300)
+
+leaf_presence_CO2CH4 <- ggarrange(leaf_presence_CO2 +theme(axis.title.x = element_blank()),  leaf_presence_CH4 ,
+                         ncol = 1, nrow = 2, align="hv",common.legend = T,legend="top",  labels = c("A", "B"))
+leaf_presence_CO2CH4
+
+dev.off()
+
+#Calculate the percent increase 
+#Increase ÷ Original Number × 100
+CO2_sed <- mean(summary2$mean_CO2_C_mg_m2_h[summary2$leaf_presence == "sediment"],) #17.9422
+CO2_OM <-mean(summary2$mean_CO2_C_mg_m2_h[summary2$leaf_presence == "leaf"],)     #88.89439
+((CO2_OM-CO2_sed)/CO2_sed) *100  #395.4487 percent increase
+#or alternatively 
+CO2_OM/CO2_sed #4.954487 times higher
+
+
+CH4_sed <-mean(summary2$mean_CH4_C_mg_m2_h[summary2$leaf_presence == "sediment"],) #0.01209158
+CH4_OM <-mean(summary2$mean_CH4_C_mg_m2_h[summary2$leaf_presence == "leaf"],)     #2.196209
+((CH4_OM-CH4_sed)/CH4_sed) *100  #18063.12 percent increase
+#or alternatively 
+CH4_OM/CH4_sed # 181.6312times higher
 
 # summary by treatment
 summary3 <- dat %>%
@@ -222,6 +266,33 @@ summary3 <- dat %>%
 # save as csv
 
 write.csv(summary3, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/treatment_flux_means.csv")
+
+
+
+###############################################################################
+
+#make another column for time as days, also numerical
+dat <- dat %>%
+  mutate(t_days= case_when(
+    startsWith(t, "dry") ~ "-1",
+    startsWith(t, "t0") ~ "0",
+    startsWith(t, "t24") ~ "1",
+    startsWith(t, "t48") ~ "2", 
+    startsWith(t, "t4") ~ "4",
+    startsWith(t, "t8") ~ "8", 
+    startsWith(t, "t16") ~ "16", 
+  ))
+
+dat$t_days <- as.numeric(dat$t_days)
+
+
+
+# Save dat as a csv
+
+str(dat) #288 obs 36 vars
+
+write.csv(dat, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/dat.csv")
+
 
 ###############################################################################
 ### Treatment means ####
@@ -282,7 +353,105 @@ dat_means <- dat_means %>%
 dat_means$t_days <- as.numeric(dat_means$t_days)
 
 ###############################################################################
+#### Plot the AFDM data ####
+
+#plot as boxplot
+palette2 <- c("#cba736", "#ba5027", "#741016")
+
+tiff("AFDM_remain", units="in", width=6, height=4, res=300)
+
+AFDM_remain <-  ggplot(subset(dat, leaf_treatment!= "control" & t=="dry"), aes(x=leaf_treatment, y=percent_AFDM_remaining, fill=temp_C)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=8,
+               outlier.size=4) + scale_fill_manual(values = palette2) +
+  ylab("AFDM remaining (%)") +
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line(), axis.title.x = element_blank())
+AFDM_remain 
+
+dev.off()
+
+
+#plot as dots
+palette2 <- c("#e2b74b", "#B7692A", "#A01313")
+
+tiff("AFDM_remain_points", units="in", width=6, height=4, res=300)
+
+AFDM_remain <-  ggplot(subset(dat, leaf_treatment!= "control" & t=="dry"), aes(x=leaf_treatment, y=percent_AFDM_remaining, colour=temp_C, group=interaction(leaf_treatment, temp_C))) + 
+  geom_jitter(position = position_dodge(0.8), shape = 16, size = 3, alpha=0.6, stroke = 0.5)+ scale_colour_manual(values = palette2) +
+  stat_summary(
+    fun.data = function(x) {
+      ymin <- min(x)
+      ymax <- max(x)
+      return(data.frame(ymin = ymin, ymax = ymax))
+    },
+    geom = "linerange", end_cap=F,width = 0.2,position = position_dodge(0.8)) +
+  scale_colour_manual(values = palette2) +
+  ylab("AFDM remaining (%)") +
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line(), axis.title.x = element_blank())
+AFDM_remain 
+
+dev.off()
+
+#### Plots AFDM vs CO2 and CH4 at the last day #### Can also try against the sum of emissions?
+tiff("CO2_AFDM", units="in", width=5, height=5, res=300)
+
+CO2_AFDM <- ggplot(subset(dat, leaf_treatment!= "control" & t=="t16"), aes(percent_AFDM_remaining, CO2_C_mg_m2_h)) + geom_point(aes(colour=temp_C, shape=leaf_treatment), size=3.5, alpha=0.6) +  theme_bw() +  theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank(), axis.ticks.x=element_blank(),  legend.position=c(.9,.75), axis.line = element_line(colour = "black"), text = element_text(size = 20), axis.text = element_text(size = 20, colour="black"))   + scale_colour_manual(values = palette2) +  geom_smooth(aes(colour=temp_C), method = "lm", linetype="dashed", se=FALSE,  formula = y ~ x) 
+CO2_AFDM
+
+dev.off()
+
+tiff("CH4_AFDM", units="in", width=5, height=5, res=300)
+
+CH4_AFDM <- ggplot(subset(dat, leaf_treatment!= "control" & t=="t16"), aes(percent_AFDM_remaining, CH4_C_mg_m2_h)) + geom_point(aes(colour=temp_C, shape=leaf_treatment), size=3.5, alpha=0.6) +  theme_bw() +  theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank(), axis.ticks.x=element_blank(),  legend.position=c(.9,.75), axis.line = element_line(colour = "black"), text = element_text(size = 20), axis.text = element_text(size = 20, colour="black"))   + scale_colour_manual(values = palette2) +  geom_smooth(aes(colour=temp_C), method = "lm", linetype="dashed", se=FALSE,  formula = y ~ x) + coord_trans(y=pseudolog10_trans)
+CH4_AFDM
+
+dev.off()
+
+#Check correlation matrix
+sub_dat1 <- subset(dat, leaf_treatment!= "control" & t=="t16")
+head(sub_dat1)
+
+result_CO2 <- sub_dat1 %>%
+  group_by(temp_C) %>%
+  summarise(correlation = cor(CO2_C_mg_m2_h, percent_AFDM_remaining),
+            p_value = cor.test(CO2_C_mg_m2_h, percent_AFDM_remaining)$p.value) %>%
+  ungroup()
+
+result_CH4 <- sub_dat1 %>%
+  group_by(temp_C) %>%
+  summarise(correlation = cor(CH4_C_mg_m2_h, percent_AFDM_remaining),
+            p_value = cor.test(CH4_C_mg_m2_h, percent_AFDM_remaining)$p.value) %>%
+  ungroup()
+
+
+
+#plot CO2 vs CH4, excluding 2 very high CH4 values
+
+tiff("CO2vCH4", units="in", width=5, height=5, res=300) 
+
+ghg <- ggplot(subset(dat, leaf_treatment!= "control" & t=="t16"), aes(CO2_C_mg_m2_h, CH4_C_mg_m2_h)) + geom_point(aes(colour=temp_C, shape=leaf_treatment), size=3.5, alpha=0.6) +  theme_bw() +  theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank(), axis.ticks.x=element_blank(),  legend.position=c(.9,.75), axis.line = element_line(colour = "black"), text = element_text(size = 20), axis.text = element_text(size = 20, colour="black"))   + scale_colour_manual(values = palette2) + ylim(-5, 12000) 
+ghg
+
+dev.off()
+
+
+sub <- subset(dat, t=="dry")
+sd(sub$CH4_C_mg_m2_h, na.rm=T)
+
+
+# Summary data
+summary <- dat %>%
+  dplyr::group_by(leaf_treatment) %>%
+  dplyr::summarise(
+    #mean_sediment_g = mean(sediment_g),
+    # sd_mean_sediment_g = sd(sediment_g), 
+    mean_dry_input_leaves_g = mean(dry_input_leaves_g), 
+    sd_dry_input_leaves_g = sd(dry_input_leaves_g))
+
+
+
 #### Plot the DO data #### 
+
+dat_withDO <- dat #should have 288 obs
 
 tiff("DO_leaftreatment", units="in", width=7, height=5, res=300)
 
@@ -294,13 +463,17 @@ dev.off()
 
 
 #DO means by treatment
-DO_means <- dat_means <- dat %>% 
-  dplyr::group_by(Date, temp_C, leaf_treatment) %>% # we group by the two values
+DO_means <- dat_withDO  %>% 
+  dplyr::group_by(Date, temp_C, leaf_presence) %>% # we group by the two values
   dplyr::summarise(
     DO_mg_L = mean(DO_mg_L),
+    sd=mean(DO_mg_L),
     DO_percent = mean(DO_percent) )
 
 str(DO_means) 
+
+x <- subset(DO_means, leaf_presence!="sediment")
+max(x$DO_mg_L, na.rm=T) #0.2666667
   
 #format Date
 DO_means$Date <-as.POSIXct(DO_means$Date, format="%Y-%m-%d", tz = "Europe/Berlin")
@@ -310,10 +483,13 @@ tiff("DO_timeseries", units="in", width=7, height=5, res=300)
 #plot change in DO over time
 palette1 <- c("#e1e590", "#BCD980", "#5D966D", "#3D6160")
 
-time_series_DO <- ggplot(subset(DO_means, Date>="2022-07-29"), aes(x=Date, y=DO_percent)) +
-  geom_line(aes(linetype=temp_C, colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
-  geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7) +
-  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )  +  scale_x_datetime(breaks = date_breaks("1 day"), labels = date_format("%d/%m", tz="Europe/Berlin"))
+time_series_DO <- ggplot(subset(dat, Date>="2022-07-29"), aes(x=Date, y=DO_mg_L)) +
+  #geom_line(aes(linetype=temp_C, colour=leaf_treatment, group = interaction(temp_C, leaf_treatment, drop=T) ) )+
+  geom_line(aes(group = interaction(leaf_treatment, temp_C), linetype=temp_C, colour = interaction(leaf_treatment)), stat = "summary", fun = "mean", size = 0.7) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
+  geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7, position=position_dodge(0.05)) +
+  #geom_errorbar(aes(ymin=DO_mg_L-sd, ymax=DO_mg_L+sd, colour=leaf_treatment), width=.2 )+
+  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )  +  scale_x_datetime(breaks = date_breaks("1 day"), labels = date_format("%d/%m", tz="Europe/Berlin")) + ylab("Dissolved oxygen (mg/L)")
 time_series_DO
 
 dev.off()
@@ -384,6 +560,22 @@ levels(dat$t)
 boxplot(CO2_C_mg_m2_h ~ start_time, data= (dat))
 
 boxplot(CH4_C_mg_m2_h ~ start_time, data= (dat)) #two very high CH4 fluxes: 2022-08-11_t16_32, and 2022-08-11_t16_28...  
+
+
+##### Plot headspace height / volume ######
+
+tiff("time_series_volume", units="in", width=8.5, height=4, res=300)
+
+palette1 <- c("#e1e590", "#BCD980", "#5D966D", "#3D6160")
+
+time_series_volume <- ggplot(subset(dat, t!="dry"), aes(x=Date, y=volume_L)) +
+ geom_line(aes(group = interaction(leaf_treatment, temp_C), linetype=temp_C, colour = interaction(leaf_treatment)), stat = "summary", fun = "mean", size = 0.7) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
+  geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7, position=position_dodge(0.05)) +
+  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )  +  scale_x_datetime(breaks = date_breaks("1 day"), labels = date_format("%d/%m", tz="Europe/Berlin")) + ylab("Headspace volume (L)")
+time_series_volume
+
+dev.off()
 
 ###########  Plot GHGs by sampling time  ########################
 
@@ -659,31 +851,43 @@ dev.off()
 
 #### Plot GHGs vs temperature ####
 
-#Plot against the actual iButton data
+#Plot against the actual iButton data vs the categorical data vs point measures
 
 tiff("CO2_temp", units="in", width=7, height=5, res=300)
 
 CO2_temp <- ggplot(subset(dat_means, t!="dry" & t!="t0"), aes(x=Avg_Temp, y=mean_CO2_C_mg_m2_h)) +
-   geom_point(aes(colour=leaf_treatment), size=2.5, alpha=0.7) +
-  scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) +   xlab("Daily average water temperature (\u00B0C)") + stat_smooth(aes(colour=leaf_treatment), geom="line", size=1, alpha=0.7, method = "lm", se=FALSE,  formula = y ~ x)
+   geom_point(aes(colour=leaf_treatment, shape=temp_C), size=2.5, alpha=0.7) +
+  scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) +   xlab("Water temperature (\u00B0C)") + stat_smooth(aes(colour=leaf_treatment), geom="line", size=1, alpha=0.7, method = "lm", se=FALSE,  formula = y ~ x)
 CO2_temp
 
 dev.off()
 
+min(dat_means$mean_CH4_C_mg_m2_h, na.rm=T)
+
+
 tiff("CH4_temp", units="in", width=7, height=5, res=300)
 
-CH4_temp <- ggplot(subset(dat_means, t!="dry" & t!="t0"), aes(x=Avg_Temp, y=mean_CH4_C_mg_m2_h)) +
-  geom_point(aes(colour=leaf_treatment), size=2.5, alpha=0.7) +
-  scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1)) +   xlab("Daily average water temperature (\u00B0C)") + stat_smooth(aes(colour=leaf_treatment), geom="line", size=1, alpha=0.7, method = "lm", se=FALSE,  formula = y ~ x)  + coord_trans(y=pseudolog10_trans)
+min(dat_means$mean_CH4_C_mg_m2_h, na.rm=T)
+
+CH4_temp <- ggplot(subset(dat_means, t!="dry" & t!="t0"), aes(x=Avg_Temp, y=log(mean_CH4_C_mg_m2_h+ 1.0002647657) )) +
+  geom_point(aes(colour=leaf_treatment, shape=temp_C), size=2.5, alpha=0.7) +
+  scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(log~mg~CH[4]*`-C`~m^-2~h^-1)) +   xlab("Water temperature (\u00B0C)") + stat_smooth(aes(colour=leaf_treatment), geom="line", size=1, alpha=0.7, method = "lm", se=FALSE,  formula = y ~ x)
 CH4_temp
 
 dev.off()
 
+#Alternatively: 
+
+CH4_temp <- ggplot(subset(dat_means, t!="dry" & t!="t0" & t!="t72"), aes(x=Avg_Temp, y=mean_CH4_C_mg_m2_h)) +
+  geom_point(aes(colour=leaf_treatment, shape=temp_C), size=2.5, alpha=0.7) +
+  scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1)) +   xlab("Daily average water temperature (\u00B0C)") + stat_smooth(aes(colour=leaf_treatment), geom="line", size=1, alpha=0.7, method = "lm", se=FALSE,  formula = y ~ x)  + coord_trans(y=pseudolog10_trans)
+CH4_temp
+
 #### Combine ####
 
-tiff("CO2CH4_vs_temp", units="in", width=4, height=6, res=300)
+tiff("CO2CH4_vs_temp", units="in", width=5, height=7, res=300)
 
-CO2CH4_vs_temp <- ggarrange(CO2_temp + theme(axis.title.x = element_blank() ),                                                                              CH4_temp  + theme(axis.title.x = element_blank() ),
+CO2CH4_vs_temp <- ggarrange(CO2_temp + theme(axis.title.x = element_blank() ),                                                                              CH4_temp  ,
                             labels = c("A", "B"), 
                            ncol = 1, nrow = 2, align="hv",common.legend = T,legend="top")
 CO2CH4_vs_temp
@@ -698,15 +902,14 @@ dev.off()
 
 #One-way repeated measures ANOVA of the effect of temperature and OM content on GHGs, also check for the interactive effect. 
 
-
 #for data analysis, exclude any NAs in the GHG column
-dat <- dat %>% drop_na(CO2_C_mg_m2_h)
+#dat <- dat %>% drop_na(CO2_C_mg_m2_h)
 
 
 #Check for outliers
 
 identify_outliers(data.frame(dat$CO2_C_mg_m2_h)) #no extreme outliers
-identify_outliers(data.frame(dat$CH4_C_ug_m2_h)) #some extreme outliers
+identify_outliers(data.frame(dat$CH4_C_mg_m2_h)) #some extreme outliers
 
 #Check for normality
 ggqqplot(dat$CO2_C_mg_m2_h) #relatively normal, but a bit skewed at the extremes
@@ -715,12 +918,24 @@ ggqqplot(sqrt(dat$CO2_C_mg_m2_h) ) #Improve after square root transformation, bu
 ggqqplot((dat$CO2_C_mg_m2_h)^(1/3) )  #Improved after cube root, better than square root, but not as good as log
 ggqqplot(dat, "CO2_C_mg_m2_h", facet.by = "Date")
 
-ggqqplot(dat$CH4_C_ug_m2_h) #not good, 2 "outliers"
-min(dat$CH4_C_ug_m2_h, na.rm=T) #-3.407595
-ggqqplot(log(dat$CH4_C_ug_m2_h + 4.407595)) #better, but still skewed, but this is the best option
-ggqqplot(sqrt(dat$CH4_C_ug_m2_h + 4.407595)) #not good
-ggqqplot((dat$CH4_C_ug_m2_h)^(1/3) )  #not good
-ggqqplot(subset(dat,CH4_C_ug_m2_h<50), "CH4_C_ug_m2_h", facet.by = "Date") # outliers on 2022-08-11
+#For CH4: 
+ggplot(dat, aes(x=log(CH4_C_mg_m2_h + 0.9966496) ) ) +
+  geom_histogram(binwidth=.5, colour="black", fill="white") #here you can see the extreme left skew, even when log transformed
+ggqqplot(dat$CH4_C_mg_m2_h) #not good, 2 "outliers"
+min(dat$CH4_C_mg_m2_h, na.rm=T) #-0.003350449
+ggqqplot(log(dat$CH4_C_mg_m2_h + 0.9966496)) #better, but still skewed, but this is the best option
+ggqqplot(sqrt(dat$CH4_C_mg_m2_h + 0.9966496)) #not good
+ggqqplot((dat$CH4_C_mg_m2_h)^(1/3) )  #not good
+ggqqplot(subset(dat,CH4_C_mg_m2_h<50), "CH4_C_mg_m2_h", facet.by = "Date") # outliers on 2022-08-10
+ggqqplot(dat,"CH4_C_mg_m2_h", facet.by = "Date") 
+#try removing the two outliers (they are from the same date and treatment...)
+dat_outlier.rm <- subset(dat, CH4_C_mg_m2_h <= 9.97)
+ggqqplot(dat_outlier.rm$CH4_C_mg_m2_h) #better than before, but not great
+ggqqplot(log(dat_outlier.rm$CH4_C_mg_m2_h + 0.9966496)) #not great
+ggqqplot((dat_outlier.rm$CH4_C_mg_m2_h)^(1/3) ) #maybe the best, but still pretty bad
+ggqqplot(dat_outlier.rm,"CH4_C_mg_m2_h", facet.by = "Date") 
+
+#But note that it's the residuals of the models that need to be normally distributed, not the data itself
 
 
 #Summary stats
@@ -731,30 +946,30 @@ dat %>%
 #Summary stats
 dat %>%
   group_by(t) %>%
-  get_summary_stats(CH4_C_ug_m2_h, type = "mean_sd") #replace with CH4 
+  get_summary_stats(CH4_C_mg_m2_h, type = "mean_sd") #replace with CH4 
 
 # Run the repeated measures ANOVA, make sure to exclude the dry and t0 measurements
-CO2_temp <- aov(CO2_C_mg_m2_h ~ temp_C + Error(Column_ID/Date), data = subset(dat, t!="dry" & t!="t0"))
+CO2_temp <- aov(CO2_C_mg_m2_h ~ temp_C + Error(Column_ID/Date), data = subset(dat, t!="dry" & t!="t0" & t!="t72"))
 summary(CO2_temp) #sig
 
 CO2_OM <- aov(CO2_C_mg_m2_h ~ leaf_treatment + Error(Column_ID/Date), data = dat)
 summary(CO2_OM) #sig
 
-CH4_temp <- aov(CH4_C_ug_m2_h ~ temp_C + Error(Column_ID/Date), data = subset(dat, t!="dry" & t!="t0"))
+CH4_temp <- aov(CH4_C_mg_m2_h ~ temp_C + Error(Column_ID/Date), data = subset(dat, t!="dry" & t!="t0" & t!="t72"))
 summary(CH4_temp) #p = 0.4
 
-CH4_OM <- aov(CH4_C_ug_m2_h ~ leaf_treatment + Error(Column_ID/Date), data = dat)
+CH4_OM <- aov(CH4_C_mg_m2_h ~ leaf_treatment + Error(Column_ID/Date), data = dat)
 summary(CO2_OM) #sig
 
 
 
 # Run two-way repeated measures ANOVA to test for individual and interactive effects of temperature and OM content
-aov_CO2_temp_OM <- aov(log(CO2_C_mg_m2_h) ~ temp_C * leaf_treatment + Error(Column_ID/(Date)), data = subset(dat, t!="dry" & t!="t0") )
+aov_CO2_temp_OM <- aov(log(CO2_C_mg_m2_h) ~ temp_C * leaf_treatment + Error(Column_ID/(Date)), data = subset(dat, t!="dry" & t!="t0" & t!="t72") )
 summary(aov_CO2_temp_OM) #individually significant effects, but non-significant interaction effect
 #when we remove dry and t0, the interaction term becomes significant
 #When you use the actual ibutton temperatures, the interaction is no longer significant
 
-aov_CH4_temp_OM <- aov(log(CH4_C_ug_m2_h+ 4.407595) ~ temp_C * leaf_treatment + Error(Column_ID/(Date)), data = subset(dat, t!="dry" & t!="t0"))
+aov_CH4_temp_OM <- aov(log(CH4_C_mg_m2_h+  1.0005103858) ~ temp_C * leaf_treatment + Error(Column_ID/(Date)), data = subset(dat, t!="dry" & t!="t0" & t!="t72"))
 summary(aov_CH4_temp_OM) # temp 0.001, leaf treatment <0.0001, interaction: 0.83
 #When we remove dry and t0, the interaction term is still not significant
 #When we use the actual iButton temperature, the interaction term is almost significant 0.045
@@ -773,28 +988,48 @@ pairs(emmCH4) #pairwise comparisons #default p adjustment is "Tukey"
 # 2. I want to test if time had a significant effect on GHGs 
 # 3. I want to test the effect of DO on GHGs
 
-#use data excluding dry and t0
-dat_sub <- subset(dat, t!="dry" & t!="t0")
+#use data excluding dry and t0 (as well as t72 when we only measured DO)
+dat_sub <- subset(dat, t!="dry" & t!="t0" & t!="t72")
+
+str(dat_sub) #180 obs of 35 vars
 
 #Make sure Column ID is a factor
 dat_sub$Column_ID <- as.factor(dat_sub$Column_ID)
 
 # Identify outliers using Cook's Distance 
-cooksD <- cooks.distance(lmer_CO2_DO)
-influential <- cooksD[(cooksD > (20 * mean(cooksD, na.rm = TRUE)))]
-influential #288
+cooksD <- cooks.distance(lmer_CO2) #run the model with dat_sub first
+influential <- cooksD[(cooksD > (15* mean(cooksD, na.rm = TRUE)))]
+influential #225 and 252
+
+n <- nrow(dat_sub)
+plot(cooksD, main = "Cooks Distance for Influential Obs")
+abline(h = 28/n, lty = 2, col = "steelblue") # add cutoff line
 
 names_of_influential <- names(influential)
 outliers <- dat_sub[names_of_influential,]
-dat_sub_without_outliers <- dat_sub %>% anti_join(outliers)
+CO2_dat_sub_without_outliers <- dat_sub %>% anti_join(outliers)
+
+#Make sure Column ID is a factor
+CO2_dat_sub_without_outliers$Column_ID <- as.factor(CO2_dat_sub_without_outliers$Column_ID)
 
 # Re run model excluding 2 outliers
 lmer_CO2 <- lmer(log(CO2_C_mg_m2_h) ~ Avg_Temp * leaf_treatment + Date  + (1 | Column_ID), data = dat_sub)
 summary(lmer_CO2) #Temp is significant, so are the OM treatments, date nor any interactions are significant
 
-#Make sure Column ID is a factor
-dat_sub_without_outliers$Column_ID <- as.factor(dat_sub_without_outliers$Column_ID)
+plot(lmer_CO2) #Looks great after removing two outliers identified by cooks
+qqnorm(resid(lmer_CO2))
+vif(lmer_CO2)
+r.squaredGLMM(lmer_CO2)
 
+#try without interaction, 
+lmer_CO2_2 <- lmer(log(CO2_C_mg_m2_h) ~ Avg_Temp + leaf_treatment + Date  + (1 | Column_ID), data = CO2_dat_sub_without_outliers)
+summary(lmer_CO2_2) #similar results
+
+#and without random effects
+lm_CO2 <- lm(log(CO2_C_mg_m2_h) ~ Avg_Temp * leaf_treatment + Date , data = CO2_dat_sub_without_outliers)
+summary(lm_CO2)  #similar results
+
+#Add DO
 lmer_CO2_DO <- lmer(log(CO2_C_mg_m2_h) ~ Avg_Temp * leaf_treatment + Date  + DO_mg_L + (1 | Column_ID), data = dat_sub)
 summary(lmer_CO2_DO)  #using the data with the 2 outliers removed, makes the random effect variance 0, and messes with the conditional and marginal r2, so stick with all the data
 
@@ -804,18 +1039,62 @@ AIC(lmer_CO2) #92.71339
 AIC(lmer_CO2_DO)  #23.94926 So better to include DO 
 
 #Check assumptions:
-plot(lmer_CO2_DO) #log transforming improves residuals, but there is potentiall an outlier
+plot(lmer_CO2_DO) #log transforming improves residuals, but there is potential an outlier
 qqnorm(resid(lmer_CO2_DO))
 
 
+
 #Now for CH4 
-lmer_CH4 <- lmer(log(CH4_C_ug_m2_h+ 4.407595) ~ Avg_Temp * leaf_treatment + Date + (1 | Column_ID), data = dat_sub)
+# Identify outliers using Cook's Distance 
+cooksD <- cooks.distance(lmer_CH4) #run the model first just with dat_sun
+influential <- cooksD[(cooksD > (15* mean(cooksD, na.rm = TRUE)))]
+influential #237 242
+
+n <- nrow(dat_sub)
+plot(cooksD, main = "Cooks Distance for Influential Obs")
+abline(h = 50/n, lty = 2, col = "steelblue") # add cutoff line
+
+names_of_influential <- names(influential)
+outliers <- dat_sub[names_of_influential,]
+CH4_dat_sub_without_outliers <- dat_sub %>% anti_join(outliers)
+
+
+min(dat_sub$CH4_C_mg_m2_h) #0.0005103858
+min(CH4_dat_sub_without_outliers$CH4_C_mg_m2_h) #0.0005103858
+
+lmer_CH4 <- lmer(log(CH4_C_mg_m2_h+ 1.0005103858) ~ as.factor(temp_C) * leaf_treatment + (1 | Column_ID), data = dat_sub)
 summary(lmer_CH4)  #OM medium and high are sig, Date is sig, OM med/high and temp interactions are significant
-#so bizarre that OM high has a negative estimate....
+#so bizarre that OM high has a negative estimate.... Using temperature as a factor seems to solve this....!
+
+#why suddenly is only date significant.... try with + 0.9966496 or +4.407595
+
+#try with column means
+min(dat_means$mean_CH4_C_mg_m2_h, na.rm=T) #-0.0002647657
+
+lmer_CH4 <- lm(log(mean_CH4_C_mg_m2_h+ 1.0002647657) ~ as.factor(temp_C) * leaf_treatment, data = subset(dat_means, t!="dry" & t!="t0" & t!="t72") )
+summary(lmer_CH4)  #nothing significant
+
+#dat_sub$leaf_treatment <- relevel(dat_sub$leaf_treatment,"control")
+lmer_CH4 <- lm(log(CH4_C_mg_m2_h+ 1.0005103858) ~ Avg_Temp * leaf_treatment, data = subset(dat, t_days=="8"))
+summary(lmer_CH4)
+
+
+plot(lmer_CH4) #Looks better when the 23 outliers removed, but has a weird pattern to it...
+qqnorm(resid(lmer_CH4))
+vif(lmer_CH4)
+
+#try without interaction
+lmer_CH4_2 <- lmer(log(CH4_C_mg_m2_h+  1.0005103858) ~ Avg_Temp * leaf_treatment  + (1 | Column_ID), data = CH4_dat_sub_without_outliers)
+summary(lmer_CH4_2)
+
+#try without random effect structure
+lm_CH4 <- lm(log(CH4_C_mg_m2_h+  1.0005103858) ~ Avg_Temp * leaf_treatment, data = CH4_dat_sub_without_outliers)
+summary(lm_CH4)
+
 
 r.squaredGLMM(lmer_CH4)
 
-lmer_DO_CH4 <- lmer(log(CH4_C_ug_m2_h+ 4.407595) ~ Avg_Temp * leaf_treatment + Date + DO_mg_L + (1 | Column_ID), data = dat_sub)
+lmer_DO_CH4 <- lmer(log(CH4_C_mg_m2_h+ 0.9966496) ~ Avg_Temp * leaf_treatment + Date + DO_mg_L + (1 | Column_ID), data = dat_sub)
 summary(lmer_DO_CH4)  #compare model performance when including DO. 
 
 AIC(lmer_CH4) #330.5843
@@ -852,3 +1131,22 @@ TukeyHSD(aov_AFDM_temp_OM) #no significant pairwise comparisons #doesn't work if
 emm_AFDM <- emmeans(aov_AFDM_temp_OM, ~ temp_C * leaf_treatment)
 pairs(emm_AFDM) #pairwise comparisons #default p adjustment is "Tukey", 
 
+#try using an LMM
+
+lmer_AFDM <- lmer(percent_AFDM_remaining ~ Avg_Temp * leaf_treatment + (1 | leaf_treatment), data = AFDM)
+summary(lmer_AFDM)
+plot(lmer_AFDM) 
+qqnorm(resid(lmer_AFDM))
+r.squaredGLMM(lmer_AFDM)
+
+
+###### Run model for DO ######
+#treatment and time effect on DO #note: need to use the data set with DO on day 3!
+
+lmer_DO <- lmer(log(DO_mg_L) ~ Avg_Temp * leaf_treatment + as.factor(Date) + (1 | Column_ID), data = dat_withDO)
+summary(lmer_DO)
+
+r.squaredGLMM(lmer_DO)
+
+plot(lmer_DO) 
+qqnorm(resid(lmer_DO)) #improved after log transformation
