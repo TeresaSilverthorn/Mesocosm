@@ -182,11 +182,11 @@ tiff("temp_final", units="in", width=7, height=5, res=300)
 
 palette3 <- c( "#BCD980", "#5D966D", "#3D6160")
 
-ibutton_temp_final <- ggplot(subset(dat, Date !="2022-07-26"), aes(x=as.factor(Date), y=Avg_Temp)) + 
+ibutton_temp_final <- ggplot(subset(dat, Date !="2022-07-26"), aes(x=as.factor(t_days), y=Avg_Temp)) + 
   geom_point(aes(shape=temp_C, colour=temp_C), size=2, alpha=0.9) + 
   scale_color_manual(values = palette3) +
   geom_line(aes(group = Column_ID, color = as.factor(temp_C)), size = 0.8, alpha=0.5) + 
-  theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3) +  ylab("Water temperature (\u00B0C)") + xlab("Date")
+  theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3) +  ylab("Water temperature (\u00B0C)") + xlab("Days since water addition") 
 ibutton_temp_final
 
 dev.off()
@@ -221,11 +221,12 @@ summary2 <- dat %>%
 
 write.csv(summary2, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/date_flux_means.csv")
 
-leaf_presence_CO2 <- ggplot(dat, aes(as.factor(Date), CO2_C_mg_m2_h, fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + xlab("Date") + scale_fill_manual(values = c("#e1e590", "#5D966D"))
+leaf_presence_CO2 <- ggplot(subset(dat, t!="t72"), aes(as.factor(t_days), CO2_C_mg_m2_h, fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + xlab("Days since water addition") + scale_fill_manual(values = c("#e1e590", "#5D966D")) +  scale_x_discrete(labels = c("dry", "0", "1", "2", "4", "8", "16"))
 leaf_presence_CO2
 
+min(dat$CH4_C_mg_m2_h, na.rm=T)
 
-leaf_presence_CH4 <- ggplot(dat, aes(as.factor(Date), log(CH4_C_mg_m2_h +0.003350449) , fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +   ylab(expression(log~CH[4]~flux~(mg~CH[4]*`-C`~m^-2~h^-1))) + xlab("Date") + scale_fill_manual(values = c("#e1e590", "#5D966D")) 
+leaf_presence_CH4 <- ggplot(subset(dat, t!="t72"), aes(as.factor(t_days), log(CH4_C_mg_m2_h +0.003350449) , fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +   ylab(expression(log~CH[4]~flux~(mg~CH[4]*`-C`~m^-2~h^-1))) + xlab("Days since water addition") + scale_fill_manual(values = c("#e1e590", "#5D966D")) +  scale_x_discrete(labels = c("dry", "0", "1", "2", "4", "8", "16"))
 leaf_presence_CH4 #this excludes 1 outlier
 
 #Combine 
@@ -278,6 +279,7 @@ dat <- dat %>%
     startsWith(t, "t0") ~ "0",
     startsWith(t, "t24") ~ "1",
     startsWith(t, "t48") ~ "2", 
+    startsWith(t, "t72") ~ "3", 
     startsWith(t, "t4") ~ "4",
     startsWith(t, "t8") ~ "8", 
     startsWith(t, "t16") ~ "16", 
@@ -351,6 +353,13 @@ dat_means <- dat_means %>%
   ))
 
 dat_means$t_days <- as.numeric(dat_means$t_days)
+
+# Save as a csv
+
+str(dat_means) #288 obs 36 vars
+
+write.csv(dat_means, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/dat_means.csv")
+
 
 ###############################################################################
 #### Plot the AFDM data ####
@@ -483,13 +492,13 @@ tiff("DO_timeseries", units="in", width=7, height=5, res=300)
 #plot change in DO over time
 palette1 <- c("#e1e590", "#BCD980", "#5D966D", "#3D6160")
 
-time_series_DO <- ggplot(subset(dat, Date>="2022-07-29"), aes(x=Date, y=DO_mg_L)) +
+time_series_DO <- ggplot(subset(dat, Date>="2022-07-29"), aes(x=as.numeric(t_days), y=DO_mg_L)) +
   #geom_line(aes(linetype=temp_C, colour=leaf_treatment, group = interaction(temp_C, leaf_treatment, drop=T) ) )+
   geom_line(aes(group = interaction(leaf_treatment, temp_C), linetype=temp_C, colour = interaction(leaf_treatment)), stat = "summary", fun = "mean", size = 0.7) +
   scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
   geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7, position=position_dodge(0.05)) +
   #geom_errorbar(aes(ymin=DO_mg_L-sd, ymax=DO_mg_L+sd, colour=leaf_treatment), width=.2 )+
-  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )  +  scale_x_datetime(breaks = date_breaks("1 day"), labels = date_format("%d/%m", tz="Europe/Berlin")) + ylab("Dissolved oxygen (mg/L)")
+  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )   + ylab("Dissolved oxygen (mg/L)") + xlab("Days since water addition") +scale_x_continuous(breaks = c(3, 4, 8, 16))
 time_series_DO
 
 dev.off()
@@ -564,18 +573,31 @@ boxplot(CH4_C_mg_m2_h ~ start_time, data= (dat)) #two very high CH4 fluxes: 2022
 
 ##### Plot headspace height / volume ######
 
-tiff("time_series_volume", units="in", width=8.5, height=4, res=300)
 
 palette1 <- c("#e1e590", "#BCD980", "#5D966D", "#3D6160")
 
-time_series_volume <- ggplot(subset(dat, t!="dry"), aes(x=Date, y=volume_L)) +
+time_series_volume <- ggplot(subset(dat, t!="dry" & t!="t72"), aes(x=as.numeric(t_days), y=volume_L)) +
  geom_line(aes(group = interaction(leaf_treatment, temp_C), linetype=temp_C, colour = interaction(leaf_treatment)), stat = "summary", fun = "mean", size = 0.7) +
   scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
   geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7, position=position_dodge(0.05)) +
-  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )  +  scale_x_datetime(breaks = date_breaks("1 day"), labels = date_format("%d/%m", tz="Europe/Berlin")) + ylab("Headspace volume (L)")
+  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab("Headspace volume (L)") + xlab("Days since water addition") + scale_x_continuous(breaks = c(0, 1, 2, 4, 8, 16))
 time_series_volume
 
+
+
+#Instead of headspace volume, plot the water volume, which is 1.5 (water) plus whatever volume the sediments occupied ~0.43 to 0.4 - -headspace volume
+
+tiff("time_series_volume", units="in", width=7.5, height=4, res=300)
+
+time_series_volume2 <- ggplot(subset(dat, t!="dry" & t!="t72"), aes(x=as.numeric(t_days), y=1.85-volume_L)) +
+  geom_line(aes(group = interaction(leaf_treatment, temp_C), linetype=temp_C, colour = interaction(leaf_treatment)), stat = "summary", fun = "mean", size = 0.7) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
+  geom_point(aes(shape=temp_C,  colour=leaf_treatment), size=2.5, alpha=0.7, position=position_dodge(0.05)) +
+  scale_fill_manual(values = palette1) + scale_colour_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab("Water volume (L)") + xlab("Days since water addition") + scale_x_continuous(breaks = c(0, 1, 2, 4, 8, 16))
+time_series_volume2
+
 dev.off()
+
 
 ###########  Plot GHGs by sampling time  ########################
 
@@ -695,7 +717,7 @@ time_series_CO2 <- ggplot(dat_means, aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m
   geom_line(aes(linetype=temp_C,  colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(shape=temp_C, colour=leaf_treatment), size=2.5, alpha=0.7) +
   scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since wetting (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) 
+  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since water addition (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) 
 time_series_CO2
 
 dev.off()
@@ -706,7 +728,7 @@ short_time_series_CH4 <- ggplotGrob(ggplot(subset(dat_means, t_days<=7), aes(x=t
   geom_line(aes(linetype=temp_C,  colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(shape=temp_C, colour=leaf_treatment), size=1.5, alpha=0.8) +
   scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), legend.title=element_blank() , axis.line = element_line() , legend.position="none", axis.title.x = element_blank(), axis.title.y = element_blank()) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since wetting (days)")  + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1)) )
+  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since water addition (days)")  + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1)) )
 short_time_series_CH4
 
 #tiff("time_series_CH4", units="in", width=7, height=5, res=300)
@@ -716,7 +738,7 @@ full_time_series_CH4 <- ggplot(dat_means, aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
   geom_line(aes(linetype=temp_C,  colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(shape=temp_C, colour=leaf_treatment), size=2.5, alpha=0.8) +
   scale_color_manual(values = palette1) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since wetting (days)")  + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1))
+  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since water addition (days)")  + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1))
 full_time_series_CH4
 
 #dev.off()
@@ -724,25 +746,25 @@ full_time_series_CH4
 
 ## Plot a simplified time series for CO2 by subsetting each temperature treatment in a A,B,C subset plot
 
-time_series_CO2_20 <- ggplot(subset(dat_means, temp_C=="20"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
+time_series_CO2_20 <- ggplot(subset(dat_means, temp_C=="20" & t_days!="t72"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment ) )+
   geom_point(aes(colour=leaf_treatment), size=3, alpha=0.7) +
   scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since wetting (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylim(0, 235) + ggtitle("A. 20 \u00B0C ")
+  scale_x_continuous(breaks = c(-1,0,1,2,4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since ater addition (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylim(0, 235) + ggtitle("A. 20 \u00B0C ")
 time_series_CO2_20
 
-time_series_CO2_25 <- ggplot(subset(dat_means, temp_C=="25"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
+time_series_CO2_25 <- ggplot(subset(dat_means, temp_C=="25" & t_days!="t72"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment ) )+
   geom_point(aes(colour=leaf_treatment), size=3, alpha=0.7, shape=17) +
   scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since wetting (days)") + ylab(expression(CO[2]~flux~(mg~CO[2]*`-C`~m^-2*~h^-1))) +ylim(0, 235) + ggtitle("B. 25 \u00B0C")
+  scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since water addition (days)") + ylab(expression(CO[2]~flux~(mg~CO[2]*`-C`~m^-2*~h^-1))) +ylim(0, 235) + ggtitle("B. 25 \u00B0C")
 time_series_CO2_25
 
-time_series_CO2_30 <- ggplot(subset(dat_means, temp_C=="30"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
+time_series_CO2_30 <- ggplot(subset(dat_means, temp_C=="30" & t_days!="t72"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment ) )+
   geom_point(aes(colour=leaf_treatment), size=3, alpha=0.7, shape=15) +
   scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ xlab("Time since wetting (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylim(0, 235) + ggtitle("C. 30 \u00B0C")
+  scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since water addition (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylim(0, 235) + ggtitle("C. 30 \u00B0C")
 time_series_CO2_30
 
 
@@ -750,18 +772,18 @@ time_series_CO2_30
 ## Plot a simplified time series for CH4 by subsetting each temperature treatment in a A,B,C subset plot
 ## add inset figures for up to 96h for CH4
 
-short_time_series_CH4_20 <- ggplot(subset(dat_means, t_days<=7 &  temp_C=="20"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
+short_time_series_CH4_20 <- ggplot(subset(dat_means, t_days<=7 &  temp_C=="20" & t_days!="t72"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
                                       geom_line(aes(colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
                                       geom_point(aes(colour=leaf_treatment),  size=2.5, alpha=0.8) +
                                       scale_color_manual(values = palette1) + theme_bw() + theme(text = element_text(size = 7), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), legend.title=element_blank() , axis.title.x = element_blank(), axis.title.y = element_blank(), axis.line = element_line() , legend.position="none") +
-                                      scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))
+                                      scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))
 short_time_series_CH4_20
 
-full_time_series_CH4_20 <- ggplot(subset(dat_means, temp_C=="20"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
+full_time_series_CH4_20 <- ggplot(subset(dat_means, temp_C=="20" & t_days!="t72"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(colour=leaf_treatment), size=2.5, alpha=0.8) +
   scale_color_manual(values = palette1) + theme_bw() + theme(legend.position = "none", axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.title.x = element_blank(), panel.border = element_blank(), axis.title.y = element_text(colour = "white"), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ #xlab("Time since wetting (hours)")  + 
+  scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ #xlab("Time since wetting (hours)")  + 
   ylab(expression(CH[4]~flux~(mg~CH[4]*`-C`~m^-2~h^-1))) + 
   ylim(0, 100) + coord_trans(y=pseudolog10_trans) + ggtitle("D. 20 \u00B0C ")
 full_time_series_CH4_20
@@ -773,18 +795,18 @@ time_series_CH4_20
   
 
 ##### Inset map for CH4 25 degrees 
-short_time_series_CH4_25 <- ggplot(subset(dat_means, t_days<=7 &  temp_C=="25"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
+short_time_series_CH4_25 <- ggplot(subset(dat_means, t_days<=7 &  temp_C=="25" & t_days!="t72"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(colour=leaf_treatment),  size=2.5, alpha=0.8, shape=17) +
   scale_color_manual(values = palette1) + theme_bw() + theme(text = element_text(size = 7), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), legend.title=element_blank() , axis.title.x = element_blank(), axis.title.y = element_blank(), axis.line = element_line() , legend.position="none") +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))
+  scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2",  "4", "8", "16"))
 short_time_series_CH4_25
 
-full_time_series_CH4_25 <- ggplot(subset(dat_means, temp_C=="25"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
+full_time_series_CH4_25 <- ggplot(subset(dat_means, temp_C=="25" & t_days!="t72"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(colour=leaf_treatment), size=2.5, alpha=0.8, shape=17) +
   scale_color_manual(values = palette1) + theme_bw() + theme(legend.position = "none", axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.title.x = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ #xlab("Time since wetting (hours)")  
+  scale_x_continuous(breaks = c(-1,0,1,2,4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ #xlab("Time since wetting (hours)")  
   ylab(expression(CH[4]~flux~(mg~CH[4]*`-C`~m^-2~h^-1))) +  
   ylim(0, 100) + coord_trans(y=pseudolog10_trans) + ggtitle("E. 25 \u00B0C ")
 full_time_series_CH4_25
@@ -796,18 +818,18 @@ time_series_CH4_25
 
 
 ##### Inset map for CH4 30 degrees 
-short_time_series_CH4_30 <- ggplot(subset(dat_means, t_days<=7 &  temp_C=="30"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
+short_time_series_CH4_30 <- ggplot(subset(dat_means, t_days<=7 &  temp_C=="30" & t_days!="t72"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(colour=leaf_treatment),  size=2.5, alpha=0.8, shape=15) +
   scale_color_manual(values = palette1) + theme_bw() + theme(text = element_text(size = 7), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), legend.title=element_blank() , axis.title.x = element_blank(), axis.title.y = element_blank(), axis.line = element_line() , legend.position="none") +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))
+  scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))
 short_time_series_CH4_30
 
-full_time_series_CH4_30 <- ggplot(subset(dat_means, temp_C=="30"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
+full_time_series_CH4_30 <- ggplot(subset(dat_means, temp_C=="30" & t_days!="t72"), aes(x=t_days, y=mean_CH4_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment, group = interaction(temp_C, leaf_treatment) ) )+
   geom_point(aes(colour=leaf_treatment), size=2.5, alpha=0.8, shape=15) +
-  scale_color_manual(values = palette1) + theme_bw() + theme(legend.position = "none", axis.title = element_text(), panel.grid.major = element_blank(), axis.title.y = element_text(colour = "white"), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.title.x = element_blank(),  panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
-  scale_x_continuous(breaks = c(-1,0,1,2,3, 4, 8, 16), labels = c("dry", "0", "1", "2", "3", "4", "8", "16"))+ #xlab("Time since wetting (hours)")  + 
+  scale_color_manual(values = palette1) + theme_bw() + theme(legend.position = "none", axis.title = element_text(), panel.grid.major = element_blank(), axis.title.y = element_text(colour = "white"), panel.grid.minor = element_blank(),panel.background = element_blank(),  panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
+  scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since water addition (days)")  + 
   ylab(expression(CH[4]~flux~(mg~CH[4]*`-C`~m^-2~h^-1))) + 
   ylim(0, 100) + coord_trans(y=pseudolog10_trans) + ggtitle("F. 30 \u00B0C ")
 full_time_series_CH4_30
@@ -944,9 +966,77 @@ dat %>%
   get_summary_stats(CO2_C_mg_m2_h, type = "mean_sd") #replace with CH4 
 
 #Summary stats
-dat %>%
-  group_by(t) %>%
-  get_summary_stats(CH4_C_mg_m2_h, type = "mean_sd") #replace with CH4 
+sum_dat <- dat %>%
+  group_by(t_days, leaf_treatment, temp_C) %>%
+  filter(t_days != "3")   %>%
+summarize(
+mean_CO2_C_mg_m2_h = mean(CO2_C_mg_m2_h), 
+mean_CH4_C_mg_m2_h = sd(CH4_C_mg_m2_h) )
+
+
+##### Calculate the total C loss over the entire experiment #####
+#total area of the 36 mesocosms is 0.25524 m2, for the 3 replicates the area is 0.02127
+ 
+
+sum_dat <- sum_dat %>%
+  mutate(t_days = as.character(t_days), 
+         hours= case_when(
+    startsWith(t_days, "-1") ~ "12",
+    startsWith(t_days, "0") ~ "12",
+    startsWith(t_days, "1") ~ "24",
+    startsWith(t_days, "2") ~ "24", 
+    startsWith(t_days, "4") ~ "48",
+    startsWith(t_days, "8") ~ "96", 
+    startsWith(t_days, "16") ~ "194")) %>%
+  mutate(area_m2 = 0.02127) %>%
+  mutate(CO2_total_output_mg = mean_CO2_C_mg_m2_h* as.numeric(hours)*area_m2) %>%
+  mutate(CH4_total_output_mg = mean_CH4_C_mg_m2_h*as.numeric(hours)*area_m2)
+
+sum(sum_dat$CO2_total_output_mg) #8005.293 mg C loss using averages, 4639.364 using treatment means 
+sum(sum_dat$CH4_total_output_mg) #1467.424 mg C loss using averages, 52.4495 using treatment means
+
+
+#total:  
+#1467.424 + 8005.293 = 9472.717 mg C using means
+#4639.364 + 52.4495 = 4691.813 mg C using treatment means
+
+
+write.csv(sum_dat, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/sum_dat.csv")
+
+#Can assume a 50% carbon content of leaf AFDM Gulis, V., & Suberkropp, K. (2003). Freshwater biology
+
+sum_AFDM <- AFDM %>%
+  group_by(leaf_treatment, temp_C) %>%
+  summarize(
+    mean_percent_AFDM_remain = mean(percent_AFDM_remaining), 
+    mean_dry_input = mean(dry_input_leaves_g) )  %>%
+  mutate(loss = (mean_dry_input*( (100-mean_percent_AFDM_remain) /100) ) ) %>%
+  mutate(C_loss_g = loss /2  ) #assume 50% is carbon
+         
+sum(sum_AFDM$C_loss_g) #9.038162 g or 9038.162 mg
+
+# Therefore 
+4691.813/9038.162 #0.5191114 
+#just over 50% of the C loss from decomposition was out-gassed. 
+
+#the CO2 fraction
+
+4639.364/9038.162  #0.5133083
+52.4495/9038.162   #0.005803116
+
+#for the CO2 equivalent of CH4 is 52.4495 * 28 GWP
+
+52.4495*28 #1468.586
+
+
+#Co2eq +CO2
+
+1468.586+ 4639.364 #6107.95 is the total loss in CO2 eq
+
+6107.95/9038.162 #0.6757956 the percent loss in CO2 eq
+
+1468.586/9038.162 # 0.1624872 #CH4 loss in CO2eq
+
 
 # Run the repeated measures ANOVA, make sure to exclude the dry and t0 measurements
 CO2_temp <- aov(CO2_C_mg_m2_h ~ temp_C + Error(Column_ID/Date), data = subset(dat, t!="dry" & t!="t0" & t!="t72"))
@@ -972,7 +1062,7 @@ summary(aov_CO2_temp_OM) #individually significant effects, but non-significant 
 aov_CH4_temp_OM <- aov(log(CH4_C_mg_m2_h+  1.0005103858) ~ temp_C * leaf_treatment + Error(Column_ID/(Date)), data = subset(dat, t!="dry" & t!="t0" & t!="t72"))
 summary(aov_CH4_temp_OM) # temp 0.001, leaf treatment <0.0001, interaction: 0.83
 #When we remove dry and t0, the interaction term is still not significant
-#When we use the actual iButton temperature, the interaction term is almost significant 0.045
+#When we use the actual iButton temperature, the interaction term is almost significant 0.0569
 
 #Run post hoc test following repeated measures ANOVA #TukeyHSD does not work on repeated measures so can use emmeans
 
@@ -999,7 +1089,7 @@ dat_sub$Column_ID <- as.factor(dat_sub$Column_ID)
 # Identify outliers using Cook's Distance 
 cooksD <- cooks.distance(lmer_CO2) #run the model with dat_sub first
 influential <- cooksD[(cooksD > (15* mean(cooksD, na.rm = TRUE)))]
-influential #225 and 252
+influential #288
 
 n <- nrow(dat_sub)
 plot(cooksD, main = "Cooks Distance for Influential Obs")
@@ -1013,7 +1103,8 @@ CO2_dat_sub_without_outliers <- dat_sub %>% anti_join(outliers)
 CO2_dat_sub_without_outliers$Column_ID <- as.factor(CO2_dat_sub_without_outliers$Column_ID)
 
 # Re run model excluding 2 outliers
-lmer_CO2 <- lmer(log(CO2_C_mg_m2_h) ~ Avg_Temp * leaf_treatment + Date  + (1 | Column_ID), data = dat_sub)
+lmer_CO2 <- lmer(log(CO2_C_mg_m2_h) ~ temp_C * leaf_treatment * as.factor(t_days)  + DO_mg_L + (1 | Column_ID), data = CO2_dat_sub_without_outliers)
+
 summary(lmer_CO2) #Temp is significant, so are the OM treatments, date nor any interactions are significant
 
 plot(lmer_CO2) #Looks great after removing two outliers identified by cooks
@@ -1044,11 +1135,40 @@ qqnorm(resid(lmer_CO2_DO))
 
 
 
+#Run dredge
+options(na.action = "na.fail") # Required for dredge to run
+
+lmer_CO2_dredge<- dredge(lmer_CO2, trace = 2, extra = list(
+  "R^2", "*" = function(x) {
+    s <- summary(x)
+    c(Rsq = s$r.squared, adjRsq = s$adj.r.squared,
+      F = s$fstatistic[[1]])
+  }))
+
+options(na.action = "na.omit") # set back to default
+
+nrow(lmer_CO2_dredge)  #how many models were run 19
+head(lmer_CO2_dredge)
+
+
+top.lmer_CO2_dredge  <- get.models(lmer_CO2_dredge , subset=delta <= 2) #The top models, with delta AIC <2
+
+# only one top model: log(CO2_C_mg_m2_h) ~ leaf_treatment + temp_C + (1 | Column_ID)
+
+lmer_CO2_dredge <- lmer(log(CO2_C_mg_m2_h) ~ temp_C  * leaf_treatment  + (1 | Column_ID), data = CO2_dat_sub_without_outliers)
+
+summary(lmer_CO2_dredge) # 30C is significant, all the leaf treatments are significant
+r.squaredGLMM(lmer_CO2_dredge) # m 0.91
+
+
+
+##################################################################################
+
 #Now for CH4 
 # Identify outliers using Cook's Distance 
 cooksD <- cooks.distance(lmer_CH4) #run the model first just with dat_sun
 influential <- cooksD[(cooksD > (15* mean(cooksD, na.rm = TRUE)))]
-influential #237 242
+influential #278 282
 
 n <- nrow(dat_sub)
 plot(cooksD, main = "Cooks Distance for Influential Obs")
@@ -1062,26 +1182,16 @@ CH4_dat_sub_without_outliers <- dat_sub %>% anti_join(outliers)
 min(dat_sub$CH4_C_mg_m2_h) #0.0005103858
 min(CH4_dat_sub_without_outliers$CH4_C_mg_m2_h) #0.0005103858
 
-lmer_CH4 <- lmer(log(CH4_C_mg_m2_h+ 1.0005103858) ~ as.factor(temp_C) * leaf_treatment + (1 | Column_ID), data = dat_sub)
+lmer_CH4 <- lmer(log(CH4_C_mg_m2_h+ 1.0005103858) ~ temp_C * leaf_treatment * as.factor(t_days) + DO_mg_L + (1 | Column_ID), data = CH4_dat_sub_without_outliers)
 summary(lmer_CH4)  #OM medium and high are sig, Date is sig, OM med/high and temp interactions are significant
-#so bizarre that OM high has a negative estimate.... Using temperature as a factor seems to solve this....!
-
 #why suddenly is only date significant.... try with + 0.9966496 or +4.407595
+#so bizarre that OM high has a negative estimate.... Using temperature as a factor seems to solve this....! and adding date (t_days) as a factor
 
-#try with column means
-min(dat_means$mean_CH4_C_mg_m2_h, na.rm=T) #-0.0002647657
-
-lmer_CH4 <- lm(log(mean_CH4_C_mg_m2_h+ 1.0002647657) ~ as.factor(temp_C) * leaf_treatment, data = subset(dat_means, t!="dry" & t!="t0" & t!="t72") )
-summary(lmer_CH4)  #nothing significant
-
-#dat_sub$leaf_treatment <- relevel(dat_sub$leaf_treatment,"control")
-lmer_CH4 <- lm(log(CH4_C_mg_m2_h+ 1.0005103858) ~ Avg_Temp * leaf_treatment, data = subset(dat, t_days=="8"))
-summary(lmer_CH4)
-
-
-plot(lmer_CH4) #Looks better when the 23 outliers removed, but has a weird pattern to it...
-qqnorm(resid(lmer_CH4))
+plot(lmer_CH4) #Looks better when the 3 outliers removed, but has a weird pattern to it...
+qqnorm(resid(lmer_CH4)) #better, a bit of an S curve
 vif(lmer_CH4)
+r.squaredGLMM(lmer_CH4)
+
 
 #try without interaction
 lmer_CH4_2 <- lmer(log(CH4_C_mg_m2_h+  1.0005103858) ~ Avg_Temp * leaf_treatment  + (1 | Column_ID), data = CH4_dat_sub_without_outliers)
@@ -1091,8 +1201,6 @@ summary(lmer_CH4_2)
 lm_CH4 <- lm(log(CH4_C_mg_m2_h+  1.0005103858) ~ Avg_Temp * leaf_treatment, data = CH4_dat_sub_without_outliers)
 summary(lm_CH4)
 
-
-r.squaredGLMM(lmer_CH4)
 
 lmer_DO_CH4 <- lmer(log(CH4_C_mg_m2_h+ 0.9966496) ~ Avg_Temp * leaf_treatment + Date + DO_mg_L + (1 | Column_ID), data = dat_sub)
 summary(lmer_DO_CH4)  #compare model performance when including DO. 
@@ -1106,6 +1214,35 @@ plot(lmer_CH4) #log transforming improves residuals, but a bit fan shaped...
 qqnorm(resid(lmer_CH4))
 
 
+
+
+#Run dredge
+options(na.action = "na.fail") # Required for dredge to run
+
+lmer_CH4_dredge<- dredge(lmer_CH4, trace = 2, extra = list(
+  "R^2", "*" = function(x) {
+    s <- summary(x)
+    c(Rsq = s$r.squared, adjRsq = s$adj.r.squared,
+      F = s$fstatistic[[1]])
+  }))
+
+options(na.action = "na.omit") # set back to default
+
+nrow(lmer_CH4_dredge)  #how many models were run 19
+head(lmer_CH4_dredge)
+
+
+top.lmer_CH4_dredge <- get.models(lmer_CH4_dredge, subset=delta <= 2) #The top models, with delta AIC <2
+
+# only one top model:  log(CH4_C_mg_m2_h + 1.0005103858) ~ as.factor(t_days) + leaf_treatment +  temp_C + as.factor(t_days):leaf_treatment +  as.factor(t_days):temp_C + leaf_treatment:temp_C + as.factor(t_days):leaf_treatment:temp_C + (1 | Column_ID) 
+
+#can simplify to just the 3 way interaction
+
+lmer_CH4_dredge <- lmer(log(CH4_C_mg_m2_h + 1.0005103858) ~ as.factor(t_days)*leaf_treatment*temp_C + (1 | Column_ID) , data = CH4_dat_sub_without_outliers)
+
+summary(lmer_CH4_dredge) # T16 med and high sig, T16 low*30 med*30 high*30, t8 med*30 high 30 significant
+r.squaredGLMM(lmer_CH4_dredge) # m 0.94
+
 #### ANOVA / LMM for AFDM ####
 # Test for the individual and interactive effects of temperature and OM on AFDM remaining (%)
 
@@ -1116,6 +1253,8 @@ ggqqplot(AFDM$percent_AFDM_remaining) #Normal
 #for AFDM use two way ANOVA with interaction, need to account for the replicates with the error term
 aov_AFDM_temp_OM <- aov(percent_AFDM_remaining ~ temp_C * leaf_treatment + Error(Column_ID), data = AFDM)
 summary(aov_AFDM_temp_OM) # no sig.
+
+
 
 #try using group means
 AFDM_means <- AFDM %>% group_by(leaf_treatment, temp_C) %>%
@@ -1143,7 +1282,7 @@ r.squaredGLMM(lmer_AFDM)
 ###### Run model for DO ######
 #treatment and time effect on DO #note: need to use the data set with DO on day 3!
 
-lmer_DO <- lmer(log(DO_mg_L) ~ Avg_Temp * leaf_treatment + as.factor(Date) + (1 | Column_ID), data = dat_withDO)
+lmer_DO <- lmer(log(DO_mg_L) ~ temp_C * leaf_treatment + as.factor(t_days) + (1 | Column_ID), data = dat)
 summary(lmer_DO)
 
 r.squaredGLMM(lmer_DO)
