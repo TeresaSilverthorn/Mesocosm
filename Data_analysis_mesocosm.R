@@ -749,21 +749,21 @@ full_time_series_CH4
 time_series_CO2_20 <- ggplot(subset(dat_means, temp_C=="20" & t_days!="t72"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment ) )+
   geom_point(aes(colour=leaf_treatment), size=3, alpha=0.7) +
-  scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
+  scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), legend.position="none",  panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
   scale_x_continuous(breaks = c(-1,0,1,2,4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since ater addition (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylim(0, 235) + ggtitle("A. 20 \u00B0C ")
 time_series_CO2_20
 
 time_series_CO2_25 <- ggplot(subset(dat_means, temp_C=="25" & t_days!="t72"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment ) )+
   geom_point(aes(colour=leaf_treatment), size=3, alpha=0.7, shape=17) +
-  scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
+  scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , legend.position="none",  axis.line = element_line() ) +
   scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since water addition (days)") + ylab(expression(CO[2]~flux~(mg~CO[2]*`-C`~m^-2*~h^-1))) +ylim(0, 235) + ggtitle("B. 25 \u00B0C")
 time_series_CO2_25
 
 time_series_CO2_30 <- ggplot(subset(dat_means, temp_C=="30" & t_days!="t72"), aes(x=as.numeric(t_days), y=mean_CO2_C_mg_m2_h)) +
   geom_line(aes(colour=leaf_treatment ) )+
   geom_point(aes(colour=leaf_treatment), size=3, alpha=0.7, shape=15) +
-  scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
+  scale_color_manual(values = palette1) + theme_bw() + theme(plot.margin = margin(t = 0.0,  r = 0.01,  b = 0.0,  l = 0.01), axis.title = element_text(), panel.grid.major = element_blank(),legend.position="none", panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +
   scale_x_continuous(breaks = c(-1,0,1,2, 4, 8, 16), labels = c("dry", "0", "1", "2", "4", "8", "16"))+ xlab("Time since water addition (days)") + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylim(0, 235) + ggtitle("C. 30 \u00B0C")
 time_series_CO2_30
 
@@ -844,27 +844,26 @@ time_series_CH4_30
 
 ##### Combine CO2 temperature plots and label ####
 
-tiff("CO2_by_temp", units="in", width=3.5, height=9, res=300)
+tiff("CO2_by_temp", units="in", width=3.45, height=8.45, res=1500)
 
 CO2_by_temp <- ggarrange(time_series_CO2_20 + theme(axis.title.y = element_blank(), axis.title.x = element_blank() ),                                    time_series_CO2_25  + theme(axis.title.x = element_blank() ), 
                          time_series_CO2_30 + theme(axis.title.y = element_blank() ),
-                         ncol = 1, nrow = 3, align="hv",common.legend = T,legend="top")
+                         ncol = 1, nrow = 3, align="hv",common.legend = F)
 CO2_by_temp
 
 dev.off()
 
-
-
+#
 
 ##### Combine CH4 temperature plots and label ####
 
 
-tiff("CH4_by_temp", units="in", width=3.5, height=8.5, res=300)
+tiff("CH4_by_temp", units="in", width=3.5, height=8.5, res=1500)
 
 CH4_by_temp <- ggarrange(time_series_CH4_20 + theme(axis.title.y = element_blank(), axis.title.x = element_blank() ), 
                 time_series_CH4_25  + theme(axis.title.x = element_blank() ),
                 time_series_CH4_30 + theme(axis.title.y = element_blank() ), 
-                ncol = 1, nrow = 3, align="hv",common.legend = T,legend="top")
+                ncol = 1, nrow = 3, align="hv",common.legend = F,legend="top")
 CH4_by_temp
 
 dev.off()
