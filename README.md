@@ -1,5 +1,5 @@
 # Mesocosm
-All data associated with mesocosm experiment examining effects of OM and temp on GHG emissions from simulated IRES pools
+All data associated with mesocosm experiment examining effects of OM and temp on GHG emissions from simulated isolated pools of non-perennial rivers
 
 This repository includes:
 - an R script used to calculaate the CO2 and CH4 fluxes (Mesocosm_GHGdat.R)
