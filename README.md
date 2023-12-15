@@ -15,28 +15,51 @@ For any questions, contact: teresa.silverthorn@gmail.com
 
 Data dictionary
 Column ID: ID for each mesocosm unit in the experiment
+
 ID_unique: unique ID for each mesocosm at each sampling time point
+
 CO2_C_mg_m2_h: CO2 flux in mg/m2/h
+
 CH4_C_mg_m2_h: CH4 flux in mg/m2/h
+
 Date: date of the sampling
+
 start_time: start time of the GHG measurement
+
 end_time: end time of the GHG measurement
+
 Headspace_height_cm: height from the water surface to the top of the mesocosm in cm
+
 DO_mg_L: dissolved oxygen concentration in mg/L
+
 DO_.: dissolved oxygen concentration in %
+
 Water_temp_C : water temperature from point measurements
+
 Note: notes
+
 volume_L: volume of the headspace air of the mesocosm
+
 area_m2: area of exposed sediment of the mesocosm
+
 ibutton_ID: unique ID for the ibutton datalogger used to continuously measure temperature in the mesocosms
+
 leaf_treatment: leaf treatment type (low, medium, high, or control)
+
 sediment_g: mass of sediments from intermittent river in g in the mesocosm at the start of the experiment
+
 dry_input_leaves_g: mass of the dry Alnus leaves put in to the mesocosms at the start of the experiment
+
 dry_output_leaves_g: oven dry mass of the Alnus leaves after the end of the experiment
+
 ceramic_pot_g_leaves: mass of the ceramic container used to measure the ash free dry mass of the leaves remaining
+
 ceramic_pot.burned_leaves_g: mass of the certamic container plus the burned leaves
+
 leaf_OM: percentage of organic matter in the leaf sample 
+
 incubation_water_mL: amount of incubation water from the stream added to the mesocosm in mL 
+
 groundwater_ml: amount of groundwater added to the mesocosm in mL
 
 
