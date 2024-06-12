@@ -21,13 +21,13 @@ library(MASS)
 library(car)
 
 #### Set wd for figures ####
-setwd("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Figures")
+setwd("C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/Figures")
 
 #### Load data ####
 
 #Load in the GHG flux results from Mesocosm_GHGR.R, combined with the ancillary data and treatment codes.
 
-dat <- read.csv ("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/CO2.CH4.fluxes.csv")
+dat <- read.csv ("C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/CO2.CH4.fluxes.csv")
 
 str(dat) #252 obs of 28 vars #since we measured DO on one day that we did not measure GHGs, that measure is missing here
 
@@ -45,18 +45,18 @@ names(dat)[names(dat) == "DO_."] <- "DO_percent"
 
 #Missing the 29/07/2023 data, import and add
 
-July29 <- read.csv("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Data/Mesocosm_GHG_data_sheet_2022.csv")
+July29 <- read.csv("C:/Users/teres/Documents/Mesocosm experiment/Data/Mesocosm_GHG_data_sheet_2022.csv")
 
 #format Date
 July29$Date <-as.POSIXct(July29$Date, format="%Y-%m-%d", tz = "Europe/Berlin")
 
-July29 <- subset(July29, Date=="2022-07-29")
+July29 <- subset(July29, Date == as.POSIXct("2022-07-29", tz = "Europe/Berlin"))
 
 #rename
 names(July29)[names(July29) == "DO_."] <- "DO_percent"
 
 #merge with treatment codes
-treatment_codes <- read.csv("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Data/Treatment_codes.csv")
+treatment_codes <- read.csv("C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/Treatment_codes.csv")
 
 July29 <- merge (July29, treatment_codes, by= "Column_ID")
 
@@ -68,7 +68,7 @@ July29$leaf_treatment <- as.factor(July29$leaf_treatment)
 dat <- bind_rows(dat, July29)
 
 ##### Import decomposition data ####
-leaf_mass_loss <- read.csv("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/leaf_mass_loss.csv")
+leaf_mass_loss <- read.csv("C:/Users/teres/Documents/Mesocosm experiment/Data/leaf_mass_loss.csv")
 str(leaf_mass_loss) #36 obs. of  3 variables
 
 #merge
@@ -76,7 +76,7 @@ dat <- merge(dat, leaf_mass_loss, by="Column_ID")
 
 
 #### Import and merge sediment data ####
-OM <- fread ("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Data/Sediment Data/Sediment_OM_mesocosm.csv")
+OM <- fread ("C:/Users/teres/Documents/Mesocosm experiment/Data/Sediment Data/Sediment_OM_mesocosm.csv")
 str(OM)
 
 #Subset relevant columns
@@ -89,7 +89,7 @@ names(OM)[names(OM) == "Sample ID"] <- "Column_ID"
 dat <- merge(dat, OM, by="Column_ID")
 
 #### Import the ibutton daily average data ####
-Tave <- read.csv("C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/Data/Daily_ave_ibutton_temps_mesocosm.csv")
+Tave <- read.csv("C:/Users/teres/Documents/Mesocosm experiment/Data/Daily_ave_ibutton_temps_mesocosm.csv")
 
 #merge with dat
 Tave$Date <-as.POSIXct(Tave$Date, format="%Y-%m-%d", tz = "Europe/Berlin")
@@ -232,7 +232,7 @@ summary2 <- dat %>%
     mean_CH4_C_mg_m2_h = mean(CH4_C_mg_m2_h),
     sd_CH4_C_mg_m2_h = sd(CH4_C_mg_m2_h))
 
-write.csv(summary2, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/date_flux_means.csv")
+write.csv(summary2, "C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/date_flux_means.csv")
 
 leaf_presence_CO2 <- ggplot(subset(dat, t!="t72"), aes(as.factor(t_days), CO2_C_mg_m2_h, fill=leaf_presence)  ) + geom_boxplot() +  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + xlab("Days since water addition") + scale_fill_manual(values = c("#e1e590", "#5D966D")) +  scale_x_discrete(labels = c("dry", "0", "1", "2", "4", "8", "16"))
 leaf_presence_CO2
@@ -279,17 +279,22 @@ summary3 <- dat %>%
 
 # save as csv
 
-write.csv(summary3, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/treatment_flux_means.csv")
+write.csv(summary3, "C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/treatment_flux_means.csv")
 
 
 
 ###############################################################################
 
-# Save dat as a csv
+#### Save dat as a csv ####
 
 str(dat) #288 obs 36 vars
 
-write.csv(dat, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/dat.csv")
+dat <- dat[, !(names(dat) %in% c("X.x", "X"))]
+
+
+print(names(dat))
+
+write.csv(dat, "C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/dat.csv")
 
 
 ###############################################################################
@@ -302,6 +307,8 @@ dat_means <- dat %>%
     sd_CO2_C_mg_m2_h = sd(CO2_C_mg_m2_h),
     mean_CH4_C_mg_m2_h = mean(CH4_C_mg_m2_h),
     sd_CH4_C_mg_m2_h = sd(CH4_C_mg_m2_h),
+    mean_k_dday = mean(k_dday),
+    mean_k_day = mean(k_day),
     DO_mg_L = mean(DO_mg_L),
     DO_percent = mean(DO_percent),
     Water_temp_C = mean(Water_temp_C),
@@ -354,7 +361,7 @@ dat_means$t_days <- as.numeric(dat_means$t_days)
 
 str(dat_means) #288 obs 36 vars
 
-write.csv(dat_means, "C:/Users/teresa.silverthorn/Dropbox/My PC (lyp5183)/Documents/Mesocosm experiment/Mesocosm/dat_means.csv")
+write.csv(dat_means, "C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/dat_means.csv")
 
 
 ###############################################################################
