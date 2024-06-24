@@ -165,7 +165,7 @@ dev.off()
 
 dat <- dat %>%
   mutate(Avg_Temp = case_when(
-    Date == "2022-08-11" ~ 5.9 + 0.71 * Water_temp_C,
+    t == "t16" ~ 5.9 + 0.71 * Water_temp_C,
     TRUE ~ Avg_Temp
   ))
 

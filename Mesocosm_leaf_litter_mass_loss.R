@@ -111,7 +111,7 @@ dev.off()
 
 
 #subset just the k column and column_ID columns 
-leaf_mass_loss <- ancil_dat[, c("k_dday", "k_day", "Column_ID")]
+leaf_mass_loss <- ancil_dat[, c("k_dday", "k_day", "Column_ID", "AFDM", "LML")]
 
 str(leaf_mass_loss) #36 obs. of  3 variables
 
@@ -142,6 +142,8 @@ summary(aov_k_day) # temp 0.0527
 plot(aov_k_day, 2) #residuals are normal
 plot(aov_k_day, 3) #homogeneity of variances is alright
 
-
-
-
+k_summary <- dat_k %>%
+  dplyr::group_by(temp_C)  %>%
+   dplyr::summarise(
+     k_day = mean(k_day, na.rm=T), 
+     k_dday = mean(k_dday, na.rm=T))
