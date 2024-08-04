@@ -9,6 +9,7 @@ library(lme4)
 library(lmerTest)
 library(MuMIn)
 library(car)
+library(vtable)
 #Note that the anova for decomposition is in Mesocosm_leaf_litter_mass_loss.R
 
 #### Set wd for figures ####
@@ -40,6 +41,29 @@ dat$CO2CH4ratio <- dat$CO2_C_mg_m2_h/dat$CH4_C_mg_m2_h
 
 #load in treatment means
 dat_means <- read.csv("C:/Users/teres/Documents/Mesocosm experiment/Mesocosm/dat_means.csv")
+
+#### GHG summary stats ####
+
+means_sub <- subset(dat_means, t!="dry" & t!="t0"  & t!="t24" & t!="t72")
+
+st(means_sub, vars = c("mean_CO2_C_mg_m2_h", "mean_CH4_C_mg_m2_h", digits=4 ))
+
+min(means_sub$mean_CO2_C_mg_m2_h, na.rm=T) #10.07992
+max(means_sub$mean_CO2_C_mg_m2_h, na.rm=T) #230.6817
+
+min(means_sub$mean_CH4_C_mg_m2_h, na.rm=T) #0.002967487
+max(means_sub$mean_CH4_C_mg_m2_h, na.rm=T) #85.03343
+
+#Summary stats
+sum_dat <- dat %>%
+  filter(t_days != "-1" & t_days != "0" & t_days != "1" & t_days != "3")   %>%
+  group_by(leaf_treatment, temp_C) %>%
+  summarize(
+    mean_CO2_C_mg_m2_h = mean(CO2_C_mg_m2_h), 
+    sd_CO2_C_mg_m2_h = sd(CO2_C_mg_m2_h), 
+    mean_CH4_C_mg_m2_h = mean(CH4_C_mg_m2_h), 
+    sd_CH4_C_mg_m2_h = sd(CH4_C_mg_m2_h) )
+
 
 
 ##### Plot CO2 : CH4 
@@ -109,6 +133,33 @@ CO2CH4_vs_temp <- ggarrange(CO2_temp + theme(axis.title.x = element_blank() ), C
 CO2CH4_vs_temp
 
 dev.off()
+
+
+################################################
+#### per Fanny's suggestion: plot CO2 v CH4 and CO2:CH4 v DO
+
+CO2_CH4 <- ggplot(subset(dat, t!="dry" & t!="t0"  & t!="t24"), aes(y=CH4_C_mg_m2_h, x=CO2_C_mg_m2_h)) +  geom_point(aes(shape=as.factor(leaf_treatment), colour=temp_C), size=2.5, alpha=0.7) +  scale_shape_manual(values = c("control" = 19, "low" = 5, "medium" = 15, "high" = 4)) +
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + xlab(expression(mg~CO[2]*`-C`~m^-2*~h^-1)) + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1))  + scale_y_continuous(trans = 'pseudo_log') 
+CO2_CH4 
+
+CO2_DO <- ggplot(subset(dat, t!="dry" & t!="t0"  & t!="t24"), aes(y=CO2_C_mg_m2_h, x=DO_mg_L)) +  geom_point(aes(shape=as.factor(leaf_treatment), colour=temp_C), size=2.5, alpha=0.7) +  scale_shape_manual(values = c("control" = 19, "low" = 5, "medium" = 15, "high" = 4)) +
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + xlab(expression(DO~(mg~L^{-1}))) 
+CO2_DO 
+
+CH4_DO <- ggplot(subset(dat, t!="dry" & t!="t0"  & t!="t24"), aes(y=CH4_C_mg_m2_h, x=DO_mg_L)) +  geom_point(aes(shape=as.factor(leaf_treatment), colour=temp_C), size=2.5, alpha=0.7) +  scale_shape_manual(values = c("control" = 19, "low" = 5, "medium" = 15, "high" = 4)) +
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + scale_y_continuous(trans = 'pseudo_log') + ylab(expression(mg~CH[4]*`-C`~m^-2~h^-1)) + xlab(expression(DO~(mg~L^{-1}))) 
+CH4_DO
+
+dat$CO2CH4 <- dat$CO2_C_mg_m2_h / dat$CH4_C_mg_m2_h
+
+CO2CH4_DO <- ggplot(subset(dat, t!="dry" & t!="t0"  & t!="t24"), aes(y=CO2CH4, x=DO_mg_L)) +  geom_point(aes(shape=as.factor(leaf_treatment), colour=temp_C), size=2.5, alpha=0.7) +  scale_shape_manual(values = c("control" = 19, "low" = 5, "medium" = 15, "high" = 4)) +
+  theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + xlab(expression(DO~(mg~L^{-1}))) + ylim(-1, 20000)
+CO2CH4_DO
+
+CO2CH4_time <- ggplot(subset(dat, t!="dry" & t!="t0"  & t!="t24" & t!="t72"), aes(y=CO2CH4, x=as.factor(t_days))) + 
+  stat_summary(fun.y = mean, geom = "line", aes(group = leaf_treatment), size = .7, alpha= 0.3) +    stat_summary(fun.data = "mean_se", geom = "errorbar", aes(group=leaf_treatment), position = position_jitter(width = 0.5), width = 0.2) +   stat_summary(fun.data = "mean_se", geom = "point", aes(shape = leaf_treatment, colour=temp_C), position = position_jitter(width = 0.5), size = 3, alpha = 0.5) +
+   theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() )
+CO2CH4_time
 
 
 ################################################
@@ -195,9 +246,12 @@ dev.off()
 decomp_dday <-  ggplot(subset(dat, leaf_treatment!= "control"), aes(x=leaf_treatment, y=k_dday, group=temp_C)) +  stat_summary(fun.data = "mean_se", geom = "errorbar",position = position_dodge(width = 0.3), aes(group= temp_C), colour="black" , width = 0.2) +  stat_summary(fun.data = "mean_se", geom = "point",position = position_dodge(width = 0.3), aes(shape = temp_C), size = 3, alpha = 0.5) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.title.x = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylab(expression(italic(k) ~ dd^-1))
 decomp_dday # make the k italic # use different point shapes than the previous plots as not to confuse temperature and leaf litter treatments
 
-decomp_day <-  ggplot(subset(dat, leaf_treatment!= "control"), aes(x=leaf_treatment, y=k_day, group=temp_C)) +  stat_summary(fun.data = "mean_se", geom = "errorbar",position = position_dodge(width = 0.3), aes(group= temp_C), colour="black" , width = 0.2) +  stat_summary(fun.data = "mean_se", geom = "point",position = position_dodge(width = 0.3), aes(shape = temp_C), size = 3, alpha = 0.5) + theme_bw() + theme(axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.title.x = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +ylab(expression(italic(k) ~ d^-1))
+tiff("k_day", units="in", width=5, height=3.5, res=300)
 
+decomp_day <-  ggplot(subset(dat, leaf_treatment!= "control"), aes(x=leaf_treatment, y=k_day, group=temp_C)) +  stat_summary(fun.data = "mean_se", geom = "errorbar",position = position_dodge(width = 0.3), aes(group= temp_C), colour="black" , width = 0.2) +  stat_summary(fun.data = "mean_se", geom = "point",position = position_dodge(width = 0.3), aes(shape = temp_C), size = 3, alpha = 0.5) + theme_bw() + theme(legend.position = "top", axis.title = element_text(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.title.x = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) +ylab(expression(italic(k) ~ d^-1))
 decomp_day
+
+dev.off()
 
 
 #Combine 
