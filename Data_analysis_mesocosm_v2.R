@@ -64,7 +64,23 @@ sum_dat <- dat %>%
     mean_CH4_C_mg_m2_h = mean(CH4_C_mg_m2_h), 
     sd_CH4_C_mg_m2_h = sd(CH4_C_mg_m2_h) )
 
+########## Plot actual water temperature over time - Supp Mat ####
 
+
+#### Figure S3 final water temperatures ####
+
+tiff("temp_final", units="in", width=7, height=5, res=300)
+
+palette3 <- c( "#BCD980", "#5D966D", "#3D6160")
+dat$t_days <- as.numeric(dat$t_days)
+
+ibutton_temp_final <- ggplot(subset(dat, Date !="2022-07-26" & t_days !=-1 & t_days !=0 & t_days !=1), aes(x=as.factor(t_days), y=Avg_Temp))+ 
+  stat_summary(fun.data = "mean_se", geom = "errorbar", aes(colour=temp_C) , width = 0.2) +  stat_summary(fun.data = "mean_se", geom = "point", aes(colour=temp_C), size = 2, alpha = 0.9) +
+  scale_color_manual(values = palette3) +
+  theme_bw() + theme( text = element_text(size = 12), axis.text = element_text(size = 12, colour="black"), axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() ) + ylim(19,33.3) +  ylab("Water temperature (\u00B0C)") + xlab("Incubation time (days)") 
+ibutton_temp_final
+
+dev.off()
 
 ##### Plot CO2 : CH4 
 
@@ -325,18 +341,18 @@ ghg_summary <- dat %>%
 
 ##############
 
-#### Figure S3 final water temperatures ####
+#### Figure S3 final water temperatures: all values ####
 
-tiff("temp_final", units="in", width=7, height=5, res=300)
+tiff("temp_final1", units="in", width=7, height=5, res=300)
 
 palette3 <- c( "#BCD980", "#5D966D", "#3D6160")
 
-ibutton_temp_final <- ggplot(subset(dat, Date !="2022-07-26" & t != "dry" & t != "t0" & t != "t24"), aes(x=as.factor(t_days), y=Avg_Temp)) + 
+ibutton_temp_final1 <- ggplot(subset(dat, Date !="2022-07-26" & t != "dry" & t != "t0" & t != "t24"), aes(x=as.factor(t_days), y=Avg_Temp)) + 
   geom_point(aes(shape=temp_C, colour=temp_C), size=2, alpha=0.9) + 
   scale_color_manual(values = palette3) +
   geom_line(aes(group = Column_ID, color = as.factor(temp_C)), size = 0.8, alpha=0.5) + 
   theme_bw() + theme(axis.title = element_text(),  panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), panel.border = element_blank(), legend.title=element_blank() , axis.line = element_line() , text = element_text(size = 12), axis.text = element_text(size = 12, colour="black")) + ylim(19,33.3) +  ylab("Water temperature (\u00B0C)") + xlab("Incubation time (days)") 
-ibutton_temp_final
+ibutton_temp_final1
 
 dev.off()
 
