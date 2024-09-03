@@ -1,4 +1,4 @@
-##### version 2 incorporating comments from reviewers of JGR Biogeosciences ################
+##### version 2 incorporating comments from reviewers of JGR Biogeosciences and coauthors ################
 
 ## load in necessary packages
 library(ggplot2)
