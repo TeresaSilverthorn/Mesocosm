@@ -9,7 +9,7 @@ This repository includes:
 - a .csv of the daily average iButton data logger water temperature (degrees C) in each mesocosm (Daily_ave_ibutton_temps_mesocosm.csv)
 - a .csv of ancillary data collected at each GHG measurement time, including the GHG measurement start and end times, headspace height, dissolved oxygen, water temperature, etc. (Mesocosm_GHG_data_sheet_2022.csv)
 - a .csv of the treatment codes from each unique column (leaf_mass_loss.csv)
-- an R script used to analyze and visualize the data (Data_analysis_mesocosm.R)
+- an R script used to analyze and visualize the data (Data_analysis_mesocosm.R) UPDATE: note that the most recent version following reviewer comments is Data_analysis_mesocosm_v2.R
 
 For any questions, contact: teresa.silverthorn@gmail.com
 
